@@ -18,6 +18,7 @@ import MyOrders from "../pages/Dashboard/User/MyOrders";
 import AdminRoute from "./AdminRoute";
 import ManageUsers from "../pages/Dashboard/Admin/ManageUsers";
 import ManageRequests from "../pages/Dashboard/Admin/ManageRequests";
+import PlatformStats from "../pages/Dashboard/Admin/PlatformStats";
 
 export const router = createBrowserRouter([
   {
@@ -116,6 +117,14 @@ export const router = createBrowserRouter([
     element: (
       <AdminRoute>
         <ManageRequests />
+      </AdminRoute>
+    ),
+  },
+  {
+    path: "admin/platform-stats",
+    element: (
+      <AdminRoute>
+        <PlatformStats />
       </AdminRoute>
     ),
   },
