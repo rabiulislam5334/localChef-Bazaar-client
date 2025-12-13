@@ -5,6 +5,7 @@ import useAuth from "./useAuth";
 
 const axiosSecure = axios.create({
   baseURL: import.meta.env.VITE_API_BASE || "http://localhost:3000",
+  withCredentials: true, // important for httpOnly cookie
 });
 
 export default function useAxiosSecure() {
@@ -13,8 +14,6 @@ export default function useAxiosSecure() {
 
   useEffect(() => {
     const reqI = axiosSecure.interceptors.request.use((config) => {
-      // Prefer cookie-based auth if backend sets httpOnly cookie.
-      // But if you store token on client, send it:
       if (user?.accessToken) {
         config.headers.Authorization = `Bearer ${user.accessToken}`;
       }
