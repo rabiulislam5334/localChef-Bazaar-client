@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-// import { AuthContext } from './AuthContext';
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
@@ -11,7 +10,6 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase/firebase.init";
 import { AuthContext } from "./AuthContext";
-// import { auth } from '../../firebase/firebase.init';
 
 const googleProvider = new GoogleAuthProvider();
 

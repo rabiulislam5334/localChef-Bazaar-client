@@ -1,47 +1,122 @@
+import React from "react";
 import { createBrowserRouter } from "react-router";
 import RootLayout from "../layouts/RootLayout";
+import Home from "../pages/Home/Home";
+import Meals from "../pages/Meals/Meals";
+import PrivetRouter from "./PrivetRouter";
+import MealDetails from "../pages/Meals/MealDetails";
+import DashboardLayout from "../layouts/DashboardLayout";
+import CreateMeal from "../pages/Dashboard/Chef/CreateMeal";
 import AuthLayout from "../layouts/AuthLayout";
+import Login from "../pages/Auth/Loging";
+import Register from "../pages/Auth/Registration";
+import MyMeals from "../pages/Dashboard/Chef/MyMeals";
+import UpdateMeal from "../pages/Dashboard/Chef/UpdateMeal";
+import PaymentPage from "../pages/Payments/PaymentPage";
+import Favorites from "../pages/Dashboard/User/Favorites";
+import MyOrders from "../pages/Dashboard/User/MyOrders";
+import AdminRoute from "./AdminRoute";
+import ManageUsers from "../pages/Dashboard/Admin/ManageUsers";
+import ManageRequests from "../pages/Dashboard/Admin/ManageRequests";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <RootLayout />,
-    // errorElement: <ErrorPage />,
+    Component: RootLayout,
     children: [
-      { index: true, element: <Home /> },
-      { path: "/course_details", element: <Allcourse /> },
-
-      // protected route
       {
-        path: "/single_details/:id",
+        index: true,
+        Component: Home,
+      },
+      {
+        path: "meals",
+        element: <Meals></Meals>,
+      },
+      {
+        path: "meals_details/:id",
+        element: <MealDetails />,
+      },
+      {
+        path: "payment",
         element: (
           <PrivetRouter>
-            <SingleCourse />
+            <PaymentPage />
           </PrivetRouter>
         ),
       },
-
       {
-        path: "/my_profile",
+        path: "favorites",
         element: (
           <PrivetRouter>
-            <MyProfile />
+            <Favorites />
           </PrivetRouter>
         ),
       },
       {
-        path: "/auth/forgot-password",
-        element: <ForgotPassword></ForgotPassword>,
-      },
-      // Auth layout
-      {
-        path: "/auth",
-        element: <AuthLayout />,
-        children: [
-          { path: "login", element: <Loging /> },
-          { path: "registration", element: <Registration /> },
-        ],
+        path: "my-orders",
+        element: (
+          <PrivetRouter>
+            <MyOrders />
+          </PrivetRouter>
+        ),
       },
     ],
+  },
+  {
+    path: "/",
+    Component: AuthLayout,
+    children: [
+      {
+        path: "auth/login",
+        Component: Login,
+      },
+      {
+        path: "auth/register",
+        Component: Register,
+      },
+    ],
+  },
+  {
+    path: "dashboard",
+    element: (
+      <PrivetRouter>
+        <DashboardLayout></DashboardLayout>
+      </PrivetRouter>
+    ),
+    children: [
+      // {
+      //   index: true,
+      //    element: DashboardHome,
+      // },
+      {
+        path: "/dashboard/create-meal",
+        element: <CreateMeal></CreateMeal>,
+      },
+      {
+        path: "/dashboard/my-meals",
+        element: <MyMeals></MyMeals>,
+      },
+      {
+        path: "/dashboard/update-meal/:id",
+        element: <UpdateMeal></UpdateMeal>,
+      },
+    ],
+  },
+  // admin
+  {
+    path: "admin/manage-users",
+    element: (
+      <AdminRoute>
+        <ManageUsers />
+      </AdminRoute>
+    ),
+  },
+  {
+    path: "admin/manage-requests",
+    element: (
+      <AdminRoute>
+        <ManageRequests />
+      </AdminRoute>
+    ),
   },
 ]);
