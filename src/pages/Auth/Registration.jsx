@@ -1,10 +1,10 @@
 import React from "react";
 import { useForm } from "react-hook-form";
-import { Link, useLocation, useNavigate } from "react-router";
-import axios from "axios";
+import { Link, useNavigate } from "react-router"; // Link, useNavigate must be imported from 'react-router-dom' (assuming)
+import axios from "axios"; // Kept for imgbb external API call
 import toast from "react-hot-toast";
 import useAuth from "../../hooks/useAuth";
-import useAxiosSecure from "../../hooks/useAxiosSecure";
+import useAxios from "../../hooks/useAxios"; // ⬅️ 1. useAxios import করা হয়েছে
 
 const Register = () => {
   const {
@@ -12,78 +12,93 @@ const Register = () => {
     handleSubmit,
     formState: { errors },
   } = useForm();
+
   const { registerUser, updateUserProfile } = useAuth();
+  const axiosInstance = useAxios(); // ⬅️ 2. axiosInstance তৈরি করা হয়েছে
   const navigate = useNavigate();
-  const location = useLocation();
-  const axiosSecure = useAxiosSecure();
 
   const handleRegistration = async (data) => {
     try {
       // 1️⃣ create firebase user
-      await registerUser(data.email, data.password);
+      const result = await registerUser(data.email, data.password);
 
       // 2️⃣ upload image to imgbb
       const formData = new FormData();
       formData.append("image", data.photo[0]);
 
-      const imageUrl = `https://api.imgbb.com/1/upload?key=${
-        import.meta.env.VITE_IMGBB_KEY
-      }`;
-      const imgRes = await axios.post(imageUrl, formData);
+      const imgRes = await axios.post(
+        `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_IMGBB_KEY}`,
+        formData
+      );
 
       const photoURL = imgRes.data.data.display_url;
 
       // 3️⃣ update firebase profile
-      await updateUserProfile(data.name, photoURL);
+      // Assuming updateUserProfile signature is (name, photoURL)
+      await updateUserProfile({
+        displayName: data.name,
+        photoURL: photoURL,
+      });
 
-      // 4️⃣ save user in database
-      const userInfo = {
-        name: data.name,
-        email: data.email,
-        imageUrl: photoURL,
-        role: "user",
-        status: "active",
-      };
+      // 4️⃣ get firebase idToken
+      const idToken = await result.user.getIdToken();
 
-      await axiosSecure.post("/users", userInfo);
+      // 5️⃣ login to backend (IMPORTANT) ⬅️ 3. এই অংশটি ফিক্স করা হয়েছে
+      await axiosInstance.post(
+        "/auth/firebase-login", // 404 ফিক্স করার জন্য শুধু relative path ব্যবহার করা হয়েছে
+        {
+          idToken,
+          name: data.name,
+          imageUrl: photoURL,
+        },
+        { withCredentials: true }
+      );
 
       toast.success("Registration successful!");
-      navigate(location.state || "/");
+      navigate("/");
     } catch (error) {
-      console.error(error);
-      toast.error("Registration failed");
+      console.error("Registration error:", error);
+      toast.error(error.message || "Registration failed");
     }
   };
 
   return (
-    <div className="card bg-base-100 w-full mx-auto max-w-sm shadow-2xl">
-      <h3 className="text-3xl text-center">Register</h3>
+    <div className="card bg-base-100 max-w-sm mx-auto shadow-2xl">
+      <h3 className="text-3xl text-center mt-4">Register</h3>
 
-      <form className="card-body" onSubmit={handleSubmit(handleRegistration)}>
-        <label className="label">Name</label>
-        <input {...register("name", { required: true })} className="input" />
-        {errors.name && <p className="text-red-500">Name required</p>}
+      <form onSubmit={handleSubmit(handleRegistration)} className="card-body">
+        <label>Name</label>
+        <input
+          {...register("name", { required: "Name required" })}
+          className="input"
+        />
+        {errors.name && <p className="text-red-500">{errors.name.message}</p>}
 
-        <label className="label">Photo</label>
+        <label>Photo</label>
         <input
           type="file"
-          {...register("photo", { required: true })}
-          className="file-input"
+          {...register("photo", { required: "Photo required" })}
         />
+        {errors.photo && <p className="text-red-500">{errors.photo.message}</p>}
 
-        <label className="label">Email</label>
+        <label>Email</label>
         <input
           type="email"
-          {...register("email", { required: true })}
-          className="input"
+          {...register("email", { required: "Email required" })}
         />
+        {errors.email && <p className="text-red-500">{errors.email.message}</p>}
 
-        <label className="label">Password</label>
+        <label>Password</label>
         <input
           type="password"
-          {...register("password", { required: true, minLength: 6 })}
-          className="input"
+          {...register("password", {
+            required: "Password required",
+            minLength: { value: 6, message: "Min 6 characters" },
+          })}
         />
+        {errors.password && (
+          <p className="text-red-500">{errors.password.message}</p>
+        )}
 
         <button className="btn btn-neutral mt-4">Register</button>
 

@@ -5,22 +5,15 @@ import useAuth from "./useAuth";
 
 const axiosSecure = axios.create({
   baseURL: import.meta.env.VITE_API_BASE || "http://localhost:3000",
-  withCredentials: true, // important for httpOnly cookie
+  withCredentials: true,
 });
 
 export default function useAxiosSecure() {
-  const { user, logOut } = useAuth();
+  const { logOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const reqI = axiosSecure.interceptors.request.use((config) => {
-      if (user?.accessToken) {
-        config.headers.Authorization = `Bearer ${user.accessToken}`;
-      }
-      return config;
-    });
-
-    const resI = axiosSecure.interceptors.response.use(
+    const resInterceptor = axiosSecure.interceptors.response.use(
       (res) => res,
       (err) => {
         const status = err?.response?.status;
@@ -32,10 +25,9 @@ export default function useAxiosSecure() {
     );
 
     return () => {
-      axiosSecure.interceptors.request.eject(reqI);
-      axiosSecure.interceptors.response.eject(resI);
+      axiosSecure.interceptors.response.eject(resInterceptor);
     };
-  }, [user, logOut, navigate]);
+  }, [logOut, navigate]);
 
   return axiosSecure;
 }

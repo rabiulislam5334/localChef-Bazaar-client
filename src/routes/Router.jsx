@@ -19,6 +19,8 @@ import AdminRoute from "./AdminRoute";
 import ManageUsers from "../pages/Dashboard/Admin/ManageUsers";
 import ManageRequests from "../pages/Dashboard/Admin/ManageRequests";
 import PlatformStats from "../pages/Dashboard/Admin/PlatformStats";
+import PaymentHistory from "../pages/Dashboard/User/PaymentHistory";
+import Profile from "../pages/Profile/Profile";
 
 export const router = createBrowserRouter([
   {
@@ -61,6 +63,14 @@ export const router = createBrowserRouter([
           </PrivetRouter>
         ),
       },
+      {
+        path: "profile",
+        element: (
+          <PrivetRouter>
+            <Profile />
+          </PrivetRouter>
+        ),
+      },
     ],
   },
   {
@@ -100,6 +110,10 @@ export const router = createBrowserRouter([
       {
         path: "/dashboard/update-meal/:id",
         element: <UpdateMeal></UpdateMeal>,
+      },
+      {
+        path: "/dashboard/payment-history",
+        element: <PaymentHistory></PaymentHistory>,
       },
     ],
   },

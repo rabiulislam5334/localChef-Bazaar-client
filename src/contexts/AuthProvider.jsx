@@ -9,6 +9,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../firebase/firebase.init";
+import useAxios from "../hooks/useAxios";
 import { AuthContext } from "./AuthContext";
 
 const googleProvider = new GoogleAuthProvider();
@@ -16,46 +17,83 @@ const googleProvider = new GoogleAuthProvider();
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
+  const axiosInstance = useAxios();
 
-  const registerUser = (email, password) => {
-    setLoading(true);
-    return createUserWithEmailAndPassword(auth, email, password);
+  const registerUser = async (email, password) => {
+    setAuthLoading(true);
+    try {
+      return await createUserWithEmailAndPassword(auth, email, password);
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
-  const signInUser = (email, password) => {
-    setLoading(true);
-    return signInWithEmailAndPassword(auth, email, password);
+  const signInUser = async (email, password) => {
+    setAuthLoading(true);
+    try {
+      return await signInWithEmailAndPassword(auth, email, password);
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
-  const signInGoogle = () => {
-    setLoading(true);
-    return signInWithPopup(auth, googleProvider);
+  const signInGoogle = async () => {
+    setAuthLoading(true);
+    try {
+      return await signInWithPopup(auth, googleProvider);
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
-  const logOut = () => {
-    setLoading(true);
-    return signOut(auth);
+  const logOut = async () => {
+    setAuthLoading(true);
+    try {
+      await signOut(auth);
+      await axiosInstance.post("/auth/logout", {}, { withCredentials: true });
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
-  const updateUserProfile = (profile) => {
+  const updateUserProfile = async (profile) => {
     return updateProfile(auth.currentUser, profile);
   };
 
-  // observe user state
+  // Consistent backend login with idToken
+  const backendLogin = async (idToken) => {
+    await axiosInstance.post(
+      "/auth/firebase-login",
+      { idToken },
+      { withCredentials: true }
+    );
+  };
+
   useEffect(() => {
-    const unSubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      setLoading(true);
+
+      if (currentUser) {
+        try {
+          const idToken = await currentUser.getIdToken();
+          await backendLogin(idToken);
+        } catch (err) {
+          console.error("Backend login failed:", err);
+        }
+      }
+
       setLoading(false);
-      console.log(currentUser);
     });
-    return () => {
-      unSubscribe();
-    };
-  }, []);
+
+    return () => unsubscribe();
+  }, [axiosInstance]);
 
   const authInfo = {
     user,
     loading,
+    authLoading,
     registerUser,
     signInUser,
     signInGoogle,
@@ -63,7 +101,9 @@ const AuthProvider = ({ children }) => {
     updateUserProfile,
   };
 
-  return <AuthContext value={authInfo}>{children}</AuthContext>;
+  return (
+    <AuthContext.Provider value={authInfo}>{children}</AuthContext.Provider>
+  );
 };
 
 export default AuthProvider;

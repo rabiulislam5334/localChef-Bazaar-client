@@ -1,48 +1,27 @@
-import React from "react";
-import { Outlet, NavLink } from "react-router";
-import useRole from "../hooks/useRole";
+import React, { useState } from "react";
+import { Outlet } from "react-router";
+import Sidebar from "../pages/Shared/Sidebar";
 
-const DashboardLayout = () => {
-  const { role } = useRole();
+export default function DashboardLayout() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <div className="drawer lg:drawer-open">
-      <input id="dashboard-drawer" type="checkbox" className="drawer-toggle" />
-      <div className="drawer-content p-4">
-        <label htmlFor="dashboard-drawer" className="btn btn-ghost lg:hidden">
-          Open
-        </label>
-        <Outlet />
-      </div>
-      <div className="drawer-side">
-        <label htmlFor="dashboard-drawer" className="drawer-overlay"></label>
-        <ul className="menu p-4 w-64 bg-base-200">
-          <li>
-            <NavLink to="/dashboard">My Orders</NavLink>
-          </li>
-          <li>
-            <NavLink to="/dashboard/profile">My Profile</NavLink>
-          </li>
+    <div className="flex min-h-screen">
+      {/* Sidebar */}
+      <Sidebar open={open} setOpen={setOpen} />
 
-          {role === "admin" && (
-            <li>
-              <NavLink to="/dashboard/admin/manage-users">Manage Users</NavLink>
-            </li>
-          )}
-          {/* chef */}
-          {role === "chef" && (
-            <li>
-              <NavLink to="/dashboard/create-meal">Create Meal</NavLink>
-            </li>
-          )}
-          {role === "chef" && (
-            <li>
-              <NavLink to="/dashboard/my-meals">My Meals</NavLink>
-            </li>
-          )}
-        </ul>
+      {/* Content */}
+      <div className="flex-1 bg-base-200 p-4">
+        {/* Mobile sidebar toggle btn */}
+        <button
+          className="btn btn-ghost lg:hidden mb-3"
+          onClick={() => setOpen(true)}
+        >
+          Menu
+        </button>
+
+        <Outlet />
       </div>
     </div>
   );
-};
-
-export default DashboardLayout;
+}
