@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams, useNavigate } from "react-router";
-
 import toast from "react-hot-toast";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 
@@ -11,6 +10,7 @@ const UpdateMeal = () => {
   const navigate = useNavigate();
 
   const [meal, setMeal] = useState(null);
+
   const imgKey = import.meta.env.VITE_IMGBB_KEY;
   const imgUploadURL = `https://api.imgbb.com/1/upload?key=${imgKey}`;
 
@@ -18,45 +18,70 @@ const UpdateMeal = () => {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm();
 
-  // Load existing meal data
+  // Load existing meal
   useEffect(() => {
-    axiosSecure.get(`/meals/${id}`).then((res) => {
+    const loadMeal = async () => {
+      const res = await axiosSecure.get(`/meals/${id}`);
+
+      const formData = {
+        ...res.data,
+        ingredients: Array.isArray(res.data.ingredients)
+          ? res.data.ingredients.join(", ")
+          : "",
+      };
+
       setMeal(res.data);
-      reset(res.data);
-    });
+      reset(formData);
+    };
+
+    loadMeal();
   }, [id, axiosSecure, reset]);
 
+  // Submit handler
   const onSubmit = async (data) => {
     try {
+      // Normalize ingredients
+      const ingredientsArray = data.ingredients
+        .split(",")
+        .map((i) => i.trim().toLowerCase())
+        .filter(Boolean);
+
+      if (ingredientsArray.length === 0) {
+        toast.error("Please enter at least one ingredient");
+        return;
+      }
+
       let imageURL = meal.foodImage;
 
-      // If user uploads a new image → upload to imgbb
-      if (data.foodImage && data.foodImage.length > 0) {
-        const imgForm = new FormData();
-        imgForm.append("image", data.foodImage[0]);
+      // Upload new image if selected
+      if (data.foodImage?.length === 1) {
+        const formData = new FormData();
+        formData.append("image", data.foodImage[0]);
 
-        const imgRes = await fetch(imgUploadURL, {
+        const res = await fetch(imgUploadURL, {
           method: "POST",
-          body: imgForm,
-        }).then((res) => res.json());
+          body: formData,
+        });
 
-        if (!imgRes.success) {
-          toast.error("Image upload failed!");
+        const imgData = await res.json();
+
+        if (!imgData.success) {
+          toast.error(imgData?.error?.message || "Image upload failed");
           return;
         }
 
-        imageURL = imgRes.data.display_url;
+        imageURL = imgData.data.display_url;
       }
 
       const updatedMeal = {
-        foodName: data.foodName,
-        ingredients: data.ingredients.split(",").map((i) => i.trim()),
-        estimatedDeliveryTime: data.estimatedDeliveryTime,
-        chefExperience: data.chefExperience,
-        price: parseFloat(data.price),
+        foodName: data.foodName.trim(),
+        ingredients: ingredientsArray,
+        estimatedDeliveryTime: data.estimatedDeliveryTime.trim(),
+        chefExperience: data.chefExperience.trim(),
+        price: Number(data.price),
         foodImage: imageURL,
       };
 
@@ -66,11 +91,11 @@ const UpdateMeal = () => {
         toast.success("Meal updated successfully!");
         navigate("/dashboard/my-meals");
       } else {
-        toast("No changes made!");
+        toast("No changes detected");
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Update failed!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Update failed");
     }
   };
 
@@ -85,11 +110,12 @@ const UpdateMeal = () => {
         <div>
           <label className="font-medium">Food Name</label>
           <input
-            type="text"
-            {...register("foodName", { required: true })}
+            {...register("foodName", { required: "Food name is required" })}
             className="input input-bordered w-full"
           />
-          {errors.foodName && <p className="text-red-500">Required</p>}
+          {errors.foodName && (
+            <p className="text-red-500 text-sm">{errors.foodName.message}</p>
+          )}
         </div>
 
         {/* Price */}
@@ -98,7 +124,10 @@ const UpdateMeal = () => {
           <input
             type="number"
             step="0.01"
-            {...register("price", { required: true })}
+            {...register("price", {
+              required: "Price is required",
+              min: { value: 1, message: "Price must be greater than 0" },
+            })}
             className="input input-bordered w-full"
           />
         </div>
@@ -107,18 +136,27 @@ const UpdateMeal = () => {
         <div>
           <label className="font-medium">Ingredients (comma separated)</label>
           <input
-            type="text"
-            {...register("ingredients", { required: true })}
+            {...register("ingredients", {
+              required: "Ingredients are required",
+              validate: (v) =>
+                v.split(",").some((i) => i.trim()) ||
+                "Enter at least one ingredient",
+            })}
             className="input input-bordered w-full"
+            placeholder="rice, chicken, oil"
           />
+          {errors.ingredients && (
+            <p className="text-red-500 text-sm">{errors.ingredients.message}</p>
+          )}
         </div>
 
         {/* Estimated Delivery Time */}
         <div>
           <label className="font-medium">Estimated Delivery Time</label>
           <input
-            type="text"
-            {...register("estimatedDeliveryTime", { required: true })}
+            {...register("estimatedDeliveryTime", {
+              required: "Delivery time required",
+            })}
             className="input input-bordered w-full"
           />
         </div>
@@ -127,34 +165,41 @@ const UpdateMeal = () => {
         <div>
           <label className="font-medium">Chef Experience</label>
           <textarea
-            {...register("chefExperience", { required: true })}
+            {...register("chefExperience", {
+              required: "Chef experience required",
+            })}
             className="textarea textarea-bordered w-full"
-          ></textarea>
+          />
         </div>
 
-        {/* Existing Image Preview */}
+        {/* Image Preview */}
         <div>
           <p className="font-medium mb-1">Current Image</p>
           <img
             src={meal.foodImage}
-            alt=""
             className="w-40 h-40 object-cover rounded"
+            alt=""
           />
         </div>
 
-        {/* New Image Upload */}
+        {/* Image Upload */}
         <div>
           <label className="font-medium">Replace Image (optional)</label>
           <input
             type="file"
+            accept="image/*"
             {...register("foodImage")}
             className="file-input file-input-bordered w-full"
           />
         </div>
 
         {/* Submit */}
-        <button className="btn btn-primary w-full" type="submit">
-          Update Meal
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="btn btn-primary w-full"
+        >
+          {isSubmitting ? "Updating..." : "Update Meal"}
         </button>
       </form>
     </div>
