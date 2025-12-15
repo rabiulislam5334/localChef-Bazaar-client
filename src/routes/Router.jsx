@@ -36,7 +36,7 @@ export const router = createBrowserRouter([
         element: <Meals></Meals>,
       },
       {
-        path: "meals_details/:id",
+        path: "meals/:id",
         element: <MealDetails />,
       },
       {
@@ -48,7 +48,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "favorites",
+        path: "/favorites",
         element: (
           <PrivetRouter>
             <Favorites />
@@ -56,7 +56,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "my-orders",
+        path: "/my-orders",
         element: (
           <PrivetRouter>
             <MyOrders />
@@ -64,7 +64,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "profile",
+        path: "/profile",
         element: (
           <PrivetRouter>
             <Profile />
@@ -119,7 +119,7 @@ export const router = createBrowserRouter([
   },
   // admin
   {
-    path: "admin/manage-users",
+    path: "/admin/manage-users",
     element: (
       <AdminRoute>
         <ManageUsers />
@@ -127,7 +127,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "admin/manage-requests",
+    path: "/admin/manage-requests",
     element: (
       <AdminRoute>
         <ManageRequests />
@@ -135,7 +135,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "admin/platform-stats",
+    path: "/admin/platform-stats",
     element: (
       <AdminRoute>
         <PlatformStats />

@@ -4,8 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import useAuth from "../../../hooks/useAuth";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
-import { Navigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
 const MyMeals = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const axiosSecure = useAxiosSecure();
   const [deleteId, setDeleteId] = useState(null);
@@ -90,7 +91,7 @@ const MyMeals = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() =>
-                        Navigate(`/dashboard/update-meal/${meal._id}`)
+                        navigate(`/dashboard/update-meal/${meal._id}`)
                       }
                       className="btn btn-sm btn-info"
                     >

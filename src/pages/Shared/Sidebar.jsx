@@ -60,12 +60,17 @@ export default function Sidebar({ open, setOpen }) {
           {(role === "user" || role === "chef" || role === "admin") && (
             <>
               <li>
-                <NavLink to="/dashboard">
+                <NavLink to="/">
+                  <Home size={16} /> Home
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/my-orders">
                   <Home size={16} /> My Orders
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/dashboard/favorites">
+                <NavLink to="/favorites">
                   <Star size={16} /> Favorites
                 </NavLink>
               </li>
@@ -75,7 +80,7 @@ export default function Sidebar({ open, setOpen }) {
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/dashboard/profile">
+                <NavLink to="/profile">
                   <Settings size={16} /> Profile
                 </NavLink>
               </li>
@@ -104,19 +109,20 @@ export default function Sidebar({ open, setOpen }) {
             <>
               <div className="divider">Admin Controls</div>
               <li>
-                <NavLink to="/dashboard/admin/manage-users">
-                  <Users size={16} /> Manage Users
+                <NavLink to="/admin/manage-requests">
+                  <Users size={16} />
+                  Manage Requests
                 </NavLink>
               </li>
 
               <li>
-                <NavLink to="/dashboard/admin/manage-requests">
-                  <ClipboardList size={16} /> Manage Requests
+                <NavLink to="/admin/manage-users">
+                  <ClipboardList size={16} /> Manage Users
                 </NavLink>
               </li>
 
               <li>
-                <NavLink to="/dashboard/admin/platform-stats">
+                <NavLink to="/admin/platform-stats">
                   <Settings size={16} /> Platform Stats
                 </NavLink>
               </li>

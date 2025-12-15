@@ -1,40 +1,43 @@
 import React, { useEffect, useState } from "react";
-import axios from "../../hooks/useAxios";
+import useAxios from "../../hooks/useAxios";
 import { Link } from "react-router";
 
 export default function Meals() {
+  const axios = useAxios(); // ✅ FIX
   const [meals, setMeals] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [sort, setSort] = useState(""); // price_asc | price_desc
+  const [sort, setSort] = useState("");
 
   useEffect(() => {
     const fetchMeals = async () => {
-      const limit = 10; // assignment requires 10 per page
+      const limit = 10;
+
       const res = await axios.get(
         `/meals?page=${page}&limit=${limit}&sort=${sort}`
       );
+
       setMeals(res.data.meals || []);
       setTotalPages(res.data.totalPages || 1);
     };
+
     fetchMeals();
-  }, [page, sort]);
+  }, [page, sort, axios]);
 
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Meals</h2>
-        <div>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="select select-bordered"
-          >
-            <option value="">Newest</option>
-            <option value="price_asc">Price: Low → High</option>
-            <option value="price_desc">Price: High → Low</option>
-          </select>
-        </div>
+
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          className="select select-bordered"
+        >
+          <option value="">Newest</option>
+          <option value="price_asc">Price: Low → High</option>
+          <option value="price_desc">Price: High → Low</option>
+        </select>
       </div>
 
       <div className="grid md:grid-cols-3 gap-4">
@@ -46,11 +49,10 @@ export default function Meals() {
               className="w-full h-40 object-cover rounded"
             />
             <h3 className="font-semibold mt-2">{m.foodName}</h3>
-            <p>
-              Chef: {m.chefName} ({m.chefId})
-            </p>
+            <p>Chef: {m.chefName}</p>
             <p>Price: ${m.price}</p>
             <p>Rating: {m.rating}</p>
+
             <Link to={`/meals/${m._id}`} className="btn btn-sm mt-2">
               See Details
             </Link>
@@ -66,9 +68,11 @@ export default function Meals() {
         >
           Prev
         </button>
+
         <span className="btn btn-ghost">
           {page} / {totalPages}
         </span>
+
         <button
           disabled={page >= totalPages}
           onClick={() => setPage((p) => p + 1)}
