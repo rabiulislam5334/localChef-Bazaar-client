@@ -207,9 +207,22 @@ export default function DashboardLayout() {
             >
               <Home size={20} />
             </NavLink>
-            <span className="font-medium hidden sm:block">
-              Welcome, {userInfo?.email || user?.email}
-            </span>
+
+            <div className="flex items-center gap-2">
+              <img
+                src={
+                  userInfo?.photo ||
+                  user?.photoURL ||
+                  "https://i.ibb.co/2kRkYwL/default-avatar.png"
+                }
+                alt="User Avatar"
+                className="w-8 h-8 rounded-full object-cover border"
+              />
+
+              <span className="font-medium hidden sm:block">
+                Welcome,{userInfo?.name || user?.displayName || user?.email}
+              </span>
+            </div>
 
             <div className="flex items-center gap-3">
               <button
