@@ -21,6 +21,10 @@ import ManageRequests from "../pages/Dashboard/Admin/ManageRequests";
 import PlatformStats from "../pages/Dashboard/Admin/PlatformStats";
 import PaymentHistory from "../pages/Dashboard/User/PaymentHistory";
 import Profile from "../pages/Profile/Profile";
+import DashboardIndex from "../pages/Dashboard/DashboardIndex";
+import AdminOverview from "../pages/Dashboard/Admin/AdminOverview";
+import ChefOverview from "../pages/Dashboard/Chef/ChefOverview";
+import UserOverview from "../pages/Dashboard/User/UserOverview";
 
 export const router = createBrowserRouter([
   {
@@ -40,7 +44,7 @@ export const router = createBrowserRouter([
         element: <MealDetails />,
       },
       {
-        path: "payment",
+        path: "/payment/:id",
         element: (
           <PrivetRouter>
             <PaymentPage />
@@ -78,7 +82,7 @@ export const router = createBrowserRouter([
     Component: AuthLayout,
     children: [
       {
-        path: "auth/login",
+        path: "/login",
         Component: Login,
       },
       {
@@ -91,55 +95,117 @@ export const router = createBrowserRouter([
     path: "dashboard",
     element: (
       <PrivetRouter>
-        <DashboardLayout></DashboardLayout>
+        <DashboardLayout />
       </PrivetRouter>
     ),
     children: [
-      // {
-      //   index: true,
-      //    element: DashboardHome,
-      // },
       {
-        path: "/dashboard/create-meal",
-        element: <CreateMeal></CreateMeal>,
+        index: true,
+        element: <DashboardIndex />,
       },
       {
-        path: "/dashboard/my-meals",
-        element: <MyMeals></MyMeals>,
+        path: "admin/overview",
+        element: (
+          <AdminRoute>
+            <AdminOverview />
+          </AdminRoute>
+        ),
+      },
+
+      {
+        path: "admin/manage-users",
+        element: (
+          <AdminRoute>
+            <ManageUsers />
+          </AdminRoute>
+        ),
       },
       {
-        path: "/dashboard/update-meal/:id",
-        element: <UpdateMeal></UpdateMeal>,
+        path: "admin/manage-requests",
+        element: (
+          <AdminRoute>
+            <ManageRequests />
+          </AdminRoute>
+        ),
       },
       {
-        path: "/dashboard/payment-history",
-        element: <PaymentHistory></PaymentHistory>,
+        path: "admin/platform-stats",
+        element: (
+          <AdminRoute>
+            <PlatformStats />
+          </AdminRoute>
+        ),
+      },
+      // 1. Overview Routes (role based)
+
+      {
+        path: "chef/overview",
+        element: (
+          <PrivetRouter>
+            <ChefOverview />
+          </PrivetRouter>
+        ),
+      },
+      {
+        path: "user/overview",
+        element: (
+          <PrivetRouter>
+            <UserOverview />
+          </PrivetRouter>
+        ),
+      },
+
+      {
+        path: "create-meal",
+        element: (
+          <PrivetRouter>
+            <CreateMeal />
+          </PrivetRouter>
+        ),
+      },
+      // 🟢 আগে ছিল: /dashboard/my-meals, এখন: my-meals
+      {
+        path: "my-meals",
+        element: (
+          <PrivetRouter>
+            <MyMeals />
+          </PrivetRouter>
+        ),
+      },
+      {
+        path: "update-meal/:id",
+        element: (
+          <PrivetRouter>
+            <UpdateMeal />
+          </PrivetRouter>
+        ),
+      },
+
+      // 3. User Routes (রিলেটিভ পাথ)
+      {
+        path: "user/orders",
+        element: (
+          <PrivetRouter>
+            <MyOrders />
+          </PrivetRouter>
+        ),
+      },
+      {
+        path: "user/favorites",
+        element: (
+          <PrivetRouter>
+            <Favorites />
+          </PrivetRouter>
+        ),
+      },
+      {
+        path: "payment-history",
+        element: (
+          <PrivetRouter>
+            <PaymentHistory />
+          </PrivetRouter>
+        ),
       },
     ],
-  },
-  // admin
-  {
-    path: "/admin/manage-users",
-    element: (
-      <AdminRoute>
-        <ManageUsers />
-      </AdminRoute>
-    ),
-  },
-  {
-    path: "/admin/manage-requests",
-    element: (
-      <AdminRoute>
-        <ManageRequests />
-      </AdminRoute>
-    ),
-  },
-  {
-    path: "/admin/platform-stats",
-    element: (
-      <AdminRoute>
-        <PlatformStats />
-      </AdminRoute>
-    ),
   },
 ]);

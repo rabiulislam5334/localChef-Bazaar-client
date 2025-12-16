@@ -144,48 +144,100 @@ const MealDetails = () => {
 
   // Place order
   const onSubmitOrder = async (formData) => {
+    // 1. Authentication Check (Client-side)
     if (!user?.email) {
       toast.error("Please login to place an order.");
-      navigate("/auth/login", { state: `/meals/${id}` });
+      navigate("/auth/login", { state: { from: `/meals/${id}` } });
       return;
     }
 
-    const quantity = parseInt(formData.quantity, 10) || 1;
-    const price = parseFloat(meal.price || 0);
-    const total = Math.round((price * quantity + Number.EPSILON) * 100) / 100;
+    // 2. Meal Data Availability Check
+    if (!meal || !meal.foodName || !meal.price || !meal.chefId) {
+      toast.error("Meal information is incomplete. Cannot place order.");
+      console.error("Missing meal data:", meal);
+      return;
+    }
 
-    // Confirm
-    const ok = window.confirm(
-      `Your total price is $${total}. Do you want to confirm the order?`
+    // 3. Form Data Parsing & Validation
+    const quantity = Number(formData.quantity);
+    const price = Number(meal.price);
+    const userAddress = formData.userAddress?.trim();
+
+    if (isNaN(quantity) || quantity < 1 || isNaN(price) || price <= 0) {
+      toast.error("Invalid quantity or price.");
+      return;
+    }
+
+    if (!userAddress) {
+      toast.error("Delivery address is required.");
+      return;
+    }
+
+    const total = price * quantity;
+
+    // 4. User Confirmation
+    const confirmed = window.confirm(
+      `Order Summary:\n\nMeal: ${
+        meal.foodName
+      }\nQuantity: ${quantity}\nTotal: $${total.toFixed(
+        2
+      )}\n\nConfirm order and proceed to payment?`
     );
-    if (!ok) return;
 
+    if (!confirmed) return;
+
+    // 5. Order Payload
     const orderPayload = {
       foodId: id,
       mealName: meal.foodName,
       price,
       quantity,
+      total,
       chefId: meal.chefId,
-      userAddress: formData.userAddress,
+      userAddress,
     };
 
+    // 6. Submit Order
     try {
       const res = await axiosSecure.post("/orders", orderPayload);
-      if (res.data.insertedId || res.status === 200) {
-        toast.success("Order placed successfully!");
-        resetOrder();
-        setOrderOpen(false);
-      } else {
-        toast.success("Order placed!");
-        resetOrder();
-        setOrderOpen(false);
+
+      // Backend থেকে insertedId আসবে (আমরা rewrite-এ { insertedId } return করেছি)
+      const orderId = res?.data?.insertedId;
+
+      if (!orderId) {
+        toast.error("Order created but failed to get Order ID for payment.");
+        return;
       }
+
+      toast.success("Order placed successfully! Redirecting to payment...");
+      setOrderOpen(false);
+      resetOrder();
+
+      // 7. Redirect to Payment Page (path param)
+      navigate(`/payment/${orderId}`);
     } catch (err) {
-      console.error("Order error:", err);
-      toast.error("Failed to place order.");
+      console.error("Order submission failed:", err);
+
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message || "Unknown error";
+
+      if (status === 401) {
+        toast.error("Session expired. Please login again.");
+        navigate("/auth/login", { state: { from: `/meals/${id}` } });
+      } else if (status === 403) {
+        toast.error(
+          message ||
+            "You are not authorized to place this order (e.g., fraud account)."
+        );
+      } else if (status === 404) {
+        toast.error(message || "User or meal not found.");
+      } else if (status >= 500) {
+        toast.error("Server error. Please try again later.");
+      } else {
+        toast.error(message || "Failed to place order.");
+      }
     }
   };
-
   if (loadingMeal)
     return (
       <div className="p-6">

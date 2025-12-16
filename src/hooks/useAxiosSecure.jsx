@@ -18,7 +18,7 @@ export default function useAxiosSecure() {
       (err) => {
         const status = err?.response?.status;
         if (status === 401 || status === 403) {
-          logOut?.().finally(() => navigate("/auth/login"));
+          logOut?.().finally(() => navigate("/"));
         }
         return Promise.reject(err);
       }

@@ -6,9 +6,9 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
-
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import toast from "react-hot-toast";
+
 import useAxiosSecure from "../../hooks/useAxiosSecure";
 import useAuth from "../../hooks/useAuth";
 
@@ -16,7 +16,7 @@ import useAuth from "../../hooks/useAuth";
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK);
 
 /* ===================== CHECKOUT FORM ===================== */
-function CheckoutForm({ clientSecret, order }) {
+const CheckoutForm = ({ clientSecret, order }) => {
   const stripe = useStripe();
   const elements = useElements();
   const axiosSecure = useAxiosSecure();
@@ -33,43 +33,42 @@ function CheckoutForm({ clientSecret, order }) {
 
     setProcessing(true);
 
-    const { error, paymentIntent } = await stripe.confirmCardPayment(
-      clientSecret,
-      {
-        payment_method: {
-          card,
-          billing_details: {
-            email: user?.email,
-            name: user?.displayName || "Customer",
+    try {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+          payment_method: {
+            card,
+            billing_details: {
+              email: user?.email,
+              name: user?.displayName || "Customer",
+            },
           },
-        },
+        }
+      );
+
+      if (error) {
+        toast.error(error.message || "Payment failed");
+        setProcessing(false);
+        return;
       }
-    );
 
-    if (error) {
-      toast.error(error.message || "Payment failed");
-      setProcessing(false);
-      return;
-    }
-
-    if (paymentIntent.status === "succeeded") {
-      try {
-        const payload = {
+      if (paymentIntent.status === "succeeded") {
+        await axiosSecure.post("/payments", {
           orderId: order._id,
           transactionId: paymentIntent.id,
           amount: paymentIntent.amount / 100,
           email: user.email,
-        };
+        });
 
-        await axiosSecure.post("/payments", payload);
         toast.success("Payment successful 🎉");
         navigate("/dashboard/payment-history");
-      } catch (err) {
-        console.error(err);
-        toast.error("Payment done but failed to save record");
-      } finally {
-        setProcessing(false);
       }
+    } catch (err) {
+      console.error(err);
+      toast.error("Payment failed");
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -78,23 +77,10 @@ function CheckoutForm({ clientSecret, order }) {
       onSubmit={handleSubmit}
       className="max-w-md mx-auto bg-white p-6 rounded shadow"
     >
-      <h2 className="text-xl font-semibold mb-4">
-        Pay ${order.price * order.quantity}
-      </h2>
+      <h2 className="text-xl font-semibold mb-4">Pay ${order.total}</h2>
 
       <div className="mb-4">
-        <CardElement
-          options={{
-            style: {
-              base: {
-                fontSize: "16px",
-                color: "#424770",
-                "::placeholder": { color: "#aab7c4" },
-              },
-              invalid: { color: "#9e2146" },
-            },
-          }}
-        />
+        <CardElement />
       </div>
 
       <button
@@ -106,56 +92,48 @@ function CheckoutForm({ clientSecret, order }) {
       </button>
     </form>
   );
-}
+};
 
 /* ===================== PAYMENT PAGE ===================== */
 const PaymentPage = () => {
-  const location = useLocation();
+  const { id } = useParams(); // orderId
   const navigate = useNavigate();
   const axiosSecure = useAxiosSecure();
 
-  const [order, setOrder] = useState(location.state?.order || null);
+  const [order, setOrder] = useState(null);
   const [clientSecret, setClientSecret] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const initPayment = async () => {
+      if (!id) return;
+
       try {
-        let currentOrder = order;
+        const orderRes = await axiosSecure.get(`/orders/${id}`);
+        setOrder(orderRes.data);
 
-        // If order not passed via state, fetch using query
-        if (!currentOrder) {
-          const params = new URLSearchParams(window.location.search);
-          const orderId = params.get("orderId");
-
-          if (!orderId) {
-            toast.error("Order not found");
-            navigate("/dashboard");
-            return;
-          }
-
-          const res = await axiosSecure.get(`/orders/${orderId}`);
-          currentOrder = res.data;
-          setOrder(currentOrder);
-        }
-
-        // Create payment intent (secure)
-        const res = await axiosSecure.post("/create-payment-intent", {
-          orderId: currentOrder._id,
+        const paymentRes = await axiosSecure.post("/create-payment-intent", {
+          orderId: id,
         });
 
-        setClientSecret(res.data.clientSecret);
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to initialize payment");
+        setClientSecret(paymentRes.data.clientSecret);
+      } catch (err) {
+        toast.error("Payment setup failed");
         navigate("/dashboard");
+      } finally {
+        setLoading(false);
       }
     };
 
     initPayment();
-  }, [order, navigate, axiosSecure]);
+  }, [id]);
+
+  if (loading) {
+    return <div className="p-6 text-center">Preparing payment...</div>;
+  }
 
   if (!order || !clientSecret) {
-    return <div className="p-6 text-center">Preparing payment...</div>;
+    return <div className="p-6 text-center">Payment not ready</div>;
   }
 
   return (
