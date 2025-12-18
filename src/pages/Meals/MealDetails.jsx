@@ -1,207 +1,168 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { useForm } from "react-hook-form";
-// import axios from "../../hooks/useAxios"; // public axios
-import useAxiosSecure from "../../hooks/useAxiosSecure"; // authenticated axios
+import { motion, AnimatePresence } from "framer-motion"; // AnimatePresence যোগ করা হয়েছে
+import {
+  Star,
+  Heart,
+  Clock,
+  MapPin,
+  User,
+  ChefHat,
+  ShoppingCart,
+  X,
+} from "lucide-react";
+import useAxios from "../../hooks/useAxios";
+import useAxiosSecure from "../../hooks/useAxiosSecure";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
-import Loader from "../../components/Loader";
-import useAxios from "../../hooks/useAxios";
+/* ---------------- Skeleton Loader ---------------- */
+const Skeleton = () => (
+  <div className="max-w-7xl mx-auto px-4 py-10 animate-pulse">
+    <div className="grid lg:grid-cols-2 gap-8">
+      <div className="h-[420px] bg-gray-200 dark:bg-gray-700 rounded-3xl" />
+      <div className="space-y-4">
+        <div className="h-10 w-2/3 bg-gray-200 dark:bg-gray-700 rounded" />
+        <div className="h-5 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
+        <div className="h-5 w-1/3 bg-gray-200 dark:bg-gray-700 rounded" />
+        <div className="h-14 w-full bg-gray-200 dark:bg-gray-700 rounded-xl" />
+      </div>
+    </div>
+  </div>
+);
 
+/* ---------------- Star Rating ---------------- */
+const StarRating = ({ rating }) => (
+  <div className="flex gap-1">
+    {[1, 2, 3, 4, 5].map((i) => (
+      <motion.div
+        key={i}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: i * 0.08 }}
+      >
+        <Star
+          size={20}
+          className={
+            i <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+          }
+        />
+      </motion.div>
+    ))}
+  </div>
+);
+
+/* ================= MAIN PAGE ================= */
 const MealDetails = () => {
-  const { id } = useParams(); // meal id
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const axiosPublic = useAxios();
   const axiosSecure = useAxiosSecure();
+  const { user } = useAuth();
 
   const [meal, setMeal] = useState(null);
   const [reviews, setReviews] = useState([]);
-  const [loadingMeal, setLoadingMeal] = useState(true);
-  const [loadingReviews, setLoadingReviews] = useState(true);
-  const [orderOpen, setOrderOpen] = useState(false);
-
-  // react-hook-form for review
-  const {
-    register: registerReview,
-    handleSubmit: handleSubmitReview,
-    reset: resetReview,
-    formState: { errors: reviewErrors, isSubmitting: reviewSubmitting },
-  } = useForm();
-
-  // react-hook-form for order
-  const {
-    register: registerOrder,
-    handleSubmit: handleSubmitOrder,
-    reset: resetOrder,
-    formState: { errors: orderErrors, isSubmitting: orderSubmitting },
-  } = useForm({
-    defaultValues: { quantity: 1, userAddress: "" },
-  });
-
-  // Load meal
-  useEffect(() => {
-    let mounted = true;
-    setLoadingMeal(true);
-    axiosPublic
-      .get(`/meals/${id}`)
-      .then((res) => {
-        if (mounted) setMeal(res.data);
-      })
-      .catch((err) => {
-        console.error("Failed to load meal:", err);
-        toast.error("Failed to load meal.");
-      })
-      .finally(() => mounted && setLoadingMeal(false));
-    return () => (mounted = false);
-  }, [id]);
-
-  // Load reviews
-  const fetchReviews = async () => {
-    setLoadingReviews(true);
-    try {
-      const res = await axiosPublic.get(`/reviews/${id}`);
-      setReviews(res.data || []);
-    } catch (err) {
-      console.error("Failed to load reviews:", err);
-      toast.error("Failed to load reviews.");
-    } finally {
-      setLoadingReviews(false);
-    }
-  };
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false); // Modal state
+  const [orderLoading, setOrderLoading] = useState(false);
 
   useEffect(() => {
-    fetchReviews();
-  }, [id]);
+    AOS.init({ duration: 800, once: true });
+  }, []);
 
-  // Add to favorites
-  const handleAddFavorite = async () => {
-    if (!user?.email) {
-      toast.error("Please login to add favorites.");
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const mealRes = await axiosPublic.get(`/meals/${id}`);
+        const reviewRes = await axiosPublic.get(`/reviews/${id}`);
+        setMeal(mealRes.data);
+        setReviews(reviewRes.data || []);
+      } catch {
+        toast.error("Failed to load meal");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [id, axiosPublic]);
+
+  /* -------- Order Submission Logic -------- */
+  // const handleOrderSubmit = async (e) => {
+  //   e.preventDefault();
+  //   if (!user) {
+  //     navigate("/auth/login", { state: `/meals/${id}` });
+  //     return;
+  //   }
+
+  //   const form = e.target;
+  //   const quantity = parseInt(form.quantity.value);
+  //   const address = form.address.value;
+
+  //   setOrderLoading(true);
+  //   const orderData = {
+  //     mealId: id,
+  //     mealName: meal.foodName,
+  //     price: meal.price,
+  //     quantity: quantity,
+  //     totalPrice: meal.price * quantity,
+  //     address: address,
+  //     customerEmail: user.email,
+  //     customerName: user.displayName,
+  //     chefEmail: meal.chefEmail, // আপনার ডাটাবেজে chefEmail থাকলে
+  //     status: "pending",
+  //   };
+
+  //   try {
+  //     const res = await axiosSecure.post("/orders", orderData);
+  //     if (res.data.insertedId) {
+  //       toast.success("Order initiated! Redirecting to payment...");
+  //       setIsModalOpen(false);
+  //       // পেমেন্ট পেজে Order ID নিয়ে যাওয়া হচ্ছে
+  //       navigate(`payment/${res.data.insertedId}`);
+  //     }
+  //   } catch (err) {
+  //     toast.error("Could not place order");
+  //   } finally {
+  //     setOrderLoading(false);
+  //   }
+  // };
+  /* -------- Order Submission Logic -------- */
+  const onSubmitOrder = async (e) => {
+    e.preventDefault();
+
+    if (!user) {
       navigate("/auth/login", { state: `/meals/${id}` });
       return;
     }
 
-    const favoriteDoc = {
-      mealId: id,
-      mealName: meal?.foodName,
-      chefId: meal?.chefId,
-      chefName: meal?.chefName,
-      price: meal?.price,
-    };
-
-    try {
-      const res = await axiosSecure.post("/favorites", favoriteDoc);
-      // backend returns 409 if exists; if success it returns insertedId
-      if (res.data.insertedId || res.status === 200) {
-        toast.success("Added to favorites!");
-      } else {
-        toast.success("Added to favorites!");
-      }
-    } catch (err) {
-      // handle already exists or other errors
-      const status = err?.response?.status;
-      if (status === 409) {
-        toast("Meal already in favorites.");
-      } else {
-        console.error(err);
-        toast.error("Failed to add favorite.");
-      }
-    }
-  };
-
-  // Submit review
-  const onSubmitReview = async (formData) => {
-    if (!user?.email) {
-      toast.error("Please login to submit a review.");
-      navigate("/auth/login", { state: `/meals/${id}` });
-      return;
-    }
-
-    const reviewPayload = {
-      foodId: id,
-      reviewerName: user.displayName || user.email.split("@")[0],
-      reviewerImage: user.photoURL || "",
-      rating: parseInt(formData.rating, 10),
-      comment: formData.comment,
-    };
-
-    try {
-      await axiosSecure.post("/reviews", reviewPayload);
-      toast.success("Review submitted successfully!");
-      resetReview();
-      // immediately refresh reviews
-      fetchReviews();
-      // also refresh meal rating by reloading meal (optional)
-      const mealRes = await axiosPublic.get(`/meals/${id}`);
-      setMeal(mealRes.data);
-    } catch (err) {
-      console.error("Review submit error:", err);
-      toast.error("Failed to submit review.");
-    }
-  };
-
-  // Place order
-  const onSubmitOrder = async (formData) => {
-    // 1. Authentication Check (Client-side)
-    if (!user?.email) {
-      toast.error("Please login to place an order.");
-      navigate("/auth/login", { state: { from: `/meals/${id}` } });
-      return;
-    }
-
-    // 2. Meal Data Availability Check
-    if (!meal || !meal.foodName || !meal.price || !meal.chefId) {
-      toast.error("Meal information is incomplete. Cannot place order.");
-      console.error("Missing meal data:", meal);
-      return;
-    }
-
-    // 3. Form Data Parsing & Validation
-    const quantity = Number(formData.quantity);
-    const price = Number(meal.price);
-    const userAddress = formData.userAddress?.trim();
-
-    if (isNaN(quantity) || quantity < 1 || isNaN(price) || price <= 0) {
-      toast.error("Invalid quantity or price.");
-      return;
-    }
-
-    if (!userAddress) {
-      toast.error("Delivery address is required.");
-      return;
-    }
-
+    const form = e.target;
+    const quantity = parseInt(form.quantity.value);
+    const userAddress = form.address.value; // আপনার ব্যাকএন্ড userAddress চায়
+    const price = parseFloat(meal?.price);
     const total = price * quantity;
 
-    // 4. User Confirmation
-    const confirmed = window.confirm(
-      `Order Summary:\n\nMeal: ${
-        meal.foodName
-      }\nQuantity: ${quantity}\nTotal: $${total.toFixed(
-        2
-      )}\n\nConfirm order and proceed to payment?`
-    );
-
-    if (!confirmed) return;
-
-    // 5. Order Payload
+    // ৫. Order Payload (আপনার ওল্ড ফরম্যাট কিন্তু বর্তমান ডাটা অনুযায়ী)
     const orderPayload = {
       foodId: id,
-      mealName: meal.foodName,
-      price,
-      quantity,
-      total,
-      chefId: meal.chefId,
-      userAddress,
+      mealName: meal?.name || meal?.foodName, // আপনার DB-তে 'name' আছে
+      price: price,
+      quantity: quantity,
+      total: total,
+      chefId: meal?.chefEmail || meal?.chefId, // আপনার DB-তে 'chefEmail' আছে
+      userAddress: userAddress,
     };
 
-    // 6. Submit Order
+    // ডিব্যাগ করার জন্য (সাবমিট না হলে কনসোল চেক করবেন)
+    console.log("Payload sending:", orderPayload);
+
+    // ৬. Submit Order
     try {
+      setOrderLoading(true);
       const res = await axiosSecure.post("/orders", orderPayload);
 
-      // Backend থেকে insertedId আসবে (আমরা rewrite-এ { insertedId } return করেছি)
+      // Backend থেকে insertedId আসবে
       const orderId = res?.data?.insertedId;
 
       if (!orderId) {
@@ -210,266 +171,211 @@ const MealDetails = () => {
       }
 
       toast.success("Order placed successfully! Redirecting to payment...");
-      setOrderOpen(false);
-      resetOrder();
+      setIsModalOpen(false); // ওল্ড কোডে setOrderOpen(false) ছিল, এখানে নামটা মিলিয়ে নিন
 
-      // 7. Redirect to Payment Page (path param)
+      // পেমেন্ট পেজে রিডাইরেক্ট
       navigate(`/payment/${orderId}`);
     } catch (err) {
-      console.error("Order submission failed:", err);
-
-      const status = err?.response?.status;
-      const message = err?.response?.data?.message || "Unknown error";
-
-      if (status === 401) {
-        toast.error("Session expired. Please login again.");
-        navigate("/auth/login", { state: { from: `/meals/${id}` } });
-      } else if (status === 403) {
-        toast.error(
-          message ||
-            "You are not authorized to place this order (e.g., fraud account)."
-        );
-      } else if (status === 404) {
-        toast.error(message || "User or meal not found.");
-      } else if (status >= 500) {
-        toast.error("Server error. Please try again later.");
-      } else {
-        toast.error(message || "Failed to place order.");
-      }
+      console.error("Order Error:", err.response?.data);
+      toast.error(err.response?.data?.message || "Could not place order");
+    } finally {
+      setOrderLoading(false);
     }
   };
-  if (loadingMeal)
-    return (
-      <div className="p-6">
-        <Loader></Loader>
-      </div>
-    );
+  /* -------- Favorite -------- */
+  const addFavorite = async () => {
+    if (!user) {
+      navigate("/auth/login", { state: `/meals/${id}` });
+      return;
+    }
 
-  if (!meal) return <div className="p-6">Meal not found.</div>;
+    try {
+      await axiosSecure.post("/favorites", {
+        mealId: id,
+        mealName: meal.foodName,
+        chefId: meal.chefId,
+        chefName: meal.chefName,
+        price: meal.price,
+      });
+      toast.success("Added to favorites ❤️");
+    } catch (err) {
+      if (err.response?.status === 409) {
+        toast("Already in favorites");
+      } else toast.error("Failed");
+    }
+  };
+
+  if (loading) return <Skeleton />;
+  if (!meal) return <div className="p-10 text-center">Meal not found</div>;
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="grid md:grid-cols-3 gap-6">
-        <img
-          src={meal.foodImage}
-          alt={meal.foodName}
-          className="w-full h-96 object-cover rounded"
-        />
-        <div className="md:col-span-2">
-          <h1 className="text-3xl font-bold">{meal.foodName}</h1>
-          <p className="mt-2">
-            Chef: {meal.chefName} ({meal.chefId})
-          </p>
-          <p className="mt-2">Price: ${meal.price}</p>
-          <p className="mt-2">Rating: {meal.rating}</p>
-          <p className="mt-4">
-            Ingredients:{" "}
+    <div className="bg-base-100 dark:bg-gray-900 min-h-screen py-10">
+      <div className="max-w-7xl mx-auto px-4">
+        {/* ---------- TOP SECTION ---------- */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid lg:grid-cols-2 gap-10"
+        >
+          <img
+            src={meal.foodImage}
+            alt={meal.foodName}
+            className="w-full h-[420px] object-cover rounded-3xl shadow-lg"
+          />
+
+          <div>
+            <h1 className="text-3xl sm:text-5xl font-serif font-bold text-[#422ad5] mb-3">
+              {meal.foodName}
+            </h1>
+
+            <div className="flex items-center gap-3 mb-4">
+              <StarRating rating={meal.rating} />
+              <span className="text-sm text-gray-500">({meal.rating}/5)</span>
+            </div>
+
+            <p className="text-2xl font-extrabold text-[#422ad5] mb-4">
+              ${meal.price}
+            </p>
+
+            <div className="space-y-3 text-gray-700 dark:text-gray-300">
+              <p className="flex gap-2">
+                <ChefHat /> Chef: {meal.chefName}
+              </p>
+              <p className="flex gap-2">
+                <Clock /> {meal.estimatedDeliveryTime}
+              </p>
+              {meal.deliveryArea && (
+                <p className="flex gap-2">
+                  <MapPin /> {meal.deliveryArea}
+                </p>
+              )}
+              <p className="flex gap-2">
+                <User /> Experience: {meal.chefExperience}
+              </p>
+            </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={() => setIsModalOpen(true)} // Modal ওপেন হবে
+                className="btn bg-[#422ad5] hover:bg-[#341db8] text-white gap-2"
+              >
+                <ShoppingCart /> Order Now
+              </button>
+
+              <button
+                onClick={addFavorite}
+                className="btn btn-outline gap-2 border-[#422ad5] text-[#422ad5]"
+              >
+                <Heart /> Favorite
+              </button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ---------- INGREDIENTS ---------- */}
+        <div className="mt-12" data-aos="fade-up">
+          <h2 className="text-2xl font-serif text-[#422ad5] mb-3">
+            Ingredients
+          </h2>
+          <p className="text-gray-700 dark:text-gray-300">
             {Array.isArray(meal.ingredients)
               ? meal.ingredients.join(", ")
               : meal.ingredients}
           </p>
-          <p className="mt-2">
-            Estimated Delivery Time: {meal.estimatedDeliveryTime}
-          </p>
-          <p className="mt-2">Chef Experience: {meal.chefExperience}</p>
+        </div>
 
-          <div className="flex gap-3 mt-4">
-            <button
-              onClick={() => setOrderOpen(true)}
-              className="btn btn-primary"
-            >
-              Order Now
-            </button>
-            <button onClick={handleAddFavorite} className="btn btn-outline">
-              Add to Favorite
-            </button>
-            <button
-              onClick={() =>
-                window.scrollTo({
-                  top: document.body.scrollHeight,
-                  behavior: "smooth",
-                })
-              }
-              className="btn"
-            >
-              See Reviews
-            </button>
+        {/* ---------- REVIEWS ---------- */}
+        <div className="mt-14">
+          <h2 className="text-3xl font-serif text-[#422ad5] mb-6">
+            Customer Reviews
+          </h2>
+          {reviews.length === 0 && (
+            <p className="text-gray-500">No reviews yet</p>
+          )}
+          <div className="space-y-5">
+            {reviews.map((r) => (
+              <motion.div
+                key={r._id}
+                data-aos="fade-up"
+                className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow"
+              >
+                <div className="flex items-center gap-4 mb-2">
+                  <img
+                    src={r.reviewerImage || "https://i.ibb.co/5r5z0Lq/user.png"}
+                    alt={r.reviewerName}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div>
+                    <h4 className="font-semibold">{r.reviewerName}</h4>
+                    <StarRating rating={r.rating} />
+                  </div>
+                </div>
+                <p className="text-gray-700 dark:text-gray-300">{r.comment}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Reviews section */}
-      <section className="mt-10">
-        <h2 className="text-2xl font-semibold mb-4">Reviews</h2>
-
-        {/* Review form */}
-        <div className="mb-6 max-w-xl">
-          <form
-            onSubmit={handleSubmitReview(onSubmitReview)}
-            className="space-y-3 bg-white p-4 rounded shadow"
-          >
-            <div>
-              <label className="font-medium">Your Rating (1-5)</label>
-              <select
-                {...registerReview("rating", { required: true })}
-                className="select select-bordered w-full"
-              >
-                <option value="">Select rating</option>
-                <option value="5">5 - Excellent</option>
-                <option value="4">4 - Very Good</option>
-                <option value="3">3 - Good</option>
-                <option value="2">2 - Fair</option>
-                <option value="1">1 - Poor</option>
-              </select>
-              {reviewErrors.rating && (
-                <p className="text-red-500 text-sm">Rating is required</p>
-              )}
-            </div>
-
-            <div>
-              <label className="font-medium">Comment</label>
-              <textarea
-                {...registerReview("comment", { required: true })}
-                className="textarea textarea-bordered w-full"
-                rows="3"
-              ></textarea>
-              {reviewErrors.comment && (
-                <p className="text-red-500 text-sm">Comment is required</p>
-              )}
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                className="btn btn-success"
-                disabled={reviewSubmitting}
-              >
-                {reviewSubmitting ? "Submitting..." : "Give Review"}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Reviews list */}
-        <div>
-          {loadingReviews ? (
-            <div>Loading reviews...</div>
-          ) : reviews.length === 0 ? (
-            <div>No reviews yet. Be the first to review!</div>
-          ) : (
-            <div className="space-y-4">
-              {reviews.map((r) => (
-                <div key={r._id} className="p-4 bg-white rounded shadow">
-                  <div className="flex items-center gap-3">
-                    {r.reviewerImage ? (
-                      <img
-                        src={r.reviewerImage}
-                        alt={r.reviewerName}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                        {r.reviewerName?.charAt(0)}
-                      </div>
-                    )}
-                    <div>
-                      <div className="font-semibold">{r.reviewerName}</div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(r.date).toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="ml-auto font-medium">
-                      Rating: {r.rating}
-                    </div>
-                  </div>
-                  <p className="mt-2">{r.comment}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Order Modal (simple) */}
-      {orderOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white w-full max-w-md rounded p-6">
-            <h3 className="text-xl font-semibold mb-2">Confirm Order</h3>
-            <p className="mb-4">
-              Meal: <strong>{meal.foodName}</strong>
-            </p>
-
-            <form
-              onSubmit={handleSubmitOrder(onSubmitOrder)}
-              className="space-y-3"
+      {/* ---------------- ORDER MODAL ---------------- */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 w-full max-w-md p-8 rounded-3xl shadow-2xl relative"
             >
-              <div>
-                <label className="font-medium">Quantity</label>
-                <input
-                  type="number"
-                  min="1"
-                  {...registerOrder("quantity", { required: true, min: 1 })}
-                  className="input input-bordered w-full"
-                />
-                {orderErrors.quantity && (
-                  <p className="text-red-500 text-sm">
-                    Quantity required (min 1)
-                  </p>
-                )}
-              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-red-500"
+              >
+                <X size={24} />
+              </button>
 
-              <div>
-                <label className="font-medium">Delivery Address</label>
-                <textarea
-                  {...registerOrder("userAddress", { required: true })}
-                  className="textarea textarea-bordered w-full"
-                  rows="3"
-                ></textarea>
-                {orderErrors.userAddress && (
-                  <p className="text-red-500 text-sm">Address is required</p>
-                )}
-              </div>
-
-              <div className="flex gap-2 justify-end">
+              <h2 className="text-2xl font-bold text-[#422ad5] mb-4">
+                Complete Your Order
+              </h2>
+              <form onSubmit={onSubmitOrder} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Quantity
+                  </label>
+                  <input
+                    name="quantity"
+                    type="number"
+                    defaultValue={1}
+                    min={1}
+                    className="w-full p-3 rounded-xl border border-gray-200 dark:bg-gray-700 focus:ring-2 focus:ring-[#422ad5] outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Delivery Address
+                  </label>
+                  <textarea
+                    name="address"
+                    rows="3"
+                    className="w-full p-3 rounded-xl border border-gray-200 dark:bg-gray-700 focus:ring-2 focus:ring-[#422ad5] outline-none"
+                    placeholder="Enter your full address..."
+                    required
+                  ></textarea>
+                </div>
                 <button
-                  type="button"
-                  onClick={() => setOrderOpen(false)}
-                  className="btn"
+                  disabled={orderLoading}
+                  className="w-full bg-[#422ad5] text-white py-3 rounded-xl font-bold hover:bg-[#341db8] transition-all"
                 >
-                  Cancel
+                  {orderLoading ? "Processing..." : "Confirm & Pay"}
                 </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={orderSubmitting}
-                >
-                  {orderSubmitting ? "Placing..." : `Confirm Order`}
-                </button>
-              </div>
-            </form>
+              </form>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 export default MealDetails;
-
-/**
- * Meal Details page
- * - Shows meal detail (GET /meals/:id)
- * - Shows reviews (GET /reviews/:foodId)
- * - Add review (POST /reviews) -> requires auth
- * - Add favorite (POST /favorites) -> requires auth
- * - Place order (POST /orders) -> requires auth
- *
- * Backend endpoints used (from your server.js):
- * - GET /meals/:id
- * - GET /reviews/:foodId
- * - POST /reviews
- * - POST /favorites
- * - POST /orders
- *
- * Note: axiosSecure will use cookie or Authorization header depending on your setup.
- */

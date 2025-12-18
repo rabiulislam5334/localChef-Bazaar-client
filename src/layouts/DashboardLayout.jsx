@@ -231,6 +231,12 @@ export default function DashboardLayout() {
               >
                 {dark ? <Sun size={18} /> : <Moon size={18} />}
               </button>
+              <li>
+                <NavLink to="profile" className={navLinkClass}>
+                  <Users size={20} />
+                  My Profile
+                </NavLink>
+              </li>
 
               <button
                 onClick={logOut}
