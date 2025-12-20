@@ -51,7 +51,7 @@ export default function Navbar() {
         {/* Right side */}
         <div className="navbar-end">
           {!user ? (
-            <Link to="/auth/login" className="btn btn-outline btn-sm">
+            <Link to="/login" className="btn btn-outline btn-sm">
               Login
             </Link>
           ) : (
