@@ -67,14 +67,6 @@ export const router = createBrowserRouter([
           </PrivetRouter>
         ),
       },
-      {
-        path: "profile",
-        element: (
-          <PrivetRouter>
-            <Profile />
-          </PrivetRouter>
-        ),
-      },
     ],
   },
   {
@@ -111,7 +103,10 @@ export const router = createBrowserRouter([
           </AdminRoute>
         ),
       },
-
+      {
+        path: "profile",
+        element: <Profile />,
+      },
       {
         path: "admin/manage-users",
         element: (
