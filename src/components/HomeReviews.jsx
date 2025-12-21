@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Star, MessageSquareQuote } from "lucide-react";
+import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination, Autoplay } from "swiper/modules";
 
-import Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
+// Swiper styles
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+
 import useAxios from "../hooks/useAxios";
 
 const HomeReviews = () => {
@@ -13,7 +18,7 @@ const HomeReviews = () => {
 
   useEffect(() => {
     axiosPublic
-      .get("/all-reviews?limit=6")
+      .get("/all-reviews?limit=10")
       .then((res) => {
         setReviews(res.data);
         setLoading(false);
@@ -29,9 +34,9 @@ const HomeReviews = () => {
       {[1, 2, 3, 4, 5].map((i) => (
         <Star
           key={i}
-          size={14}
+          size={16}
           className={
-            i <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+            i <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"
           }
         />
       ))}
@@ -40,77 +45,105 @@ const HomeReviews = () => {
 
   if (loading)
     return (
-      <div className="max-w-7xl mx-auto px-4 py-10 text-center">
-        Loading Reviews...
+      <div className="flex justify-center items-center py-20">
+        <span className="loading loading-spinner loading-lg text-[#422ad5]"></span>
       </div>
     );
 
   return (
-    <section className="py-20 bg-gray-50 dark:bg-gray-900/50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-serif font-bold text-[#422ad5] mb-4">
-            What Our Foodies Say
+    <section className="py-24 bg-white overflow-hidden">
+      <div className="container mx-auto px-4">
+        {/* Header Section */}
+        <div className="text-center mb-16 relative">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            className="inline-block p-3 bg-[#422ad5]/10 rounded-2xl text-[#422ad5] mb-4"
+          >
+            <Quote size={32} />
+          </motion.div>
+          <h2 className="text-4xl md:text-6xl font-serif font-black text-gray-900 mb-4">
+            Hear from our <span className="text-[#422ad5]">Foodies</span>
           </h2>
-          <p className="text-gray-500 max-w-lg mx-auto italic">
-            Real stories from real customers who enjoyed our chef-crafted meals.
+          <p className="text-gray-500 max-w-lg mx-auto text-lg">
+            Real experiences from people who love authentic home-cooked meals.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {reviews.map((review, index) => (
-            <motion.div
-              key={review._id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              viewport={{ once: true }}
-              className="bg-white dark:bg-gray-800 p-8 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 relative group"
-            >
-              <MessageSquareQuote
-                className="absolute top-6 right-8 text-[#422ad5]/10 group-hover:text-[#422ad5]/20 transition-colors"
-                size={60}
-              />
-
-              <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-6">
-                  <img
-                    src={
-                      review.reviewerImage ||
-                      "https://i.ibb.co/5r5z0Lq/user.png"
-                    }
-                    alt={review.reviewerName}
-                    className="w-14 h-14 rounded-2xl object-cover ring-4 ring-[#422ad5]/5"
-                  />
+        {/* Swiper Slider */}
+        <div className="relative group px-4">
+          <Swiper
+            modules={[Navigation, Pagination, Autoplay]}
+            spaceBetween={30}
+            slidesPerView={1}
+            loop={true}
+            autoplay={{ delay: 4000, disableOnInteraction: false }}
+            pagination={{ clickable: true, dynamicBullets: true }}
+            navigation={{
+              nextEl: ".next-btn",
+              prevEl: ".prev-btn",
+            }}
+            breakpoints={{
+              768: { slidesPerView: 2 },
+              1024: { slidesPerView: 3 },
+            }}
+            className="pb-16"
+          >
+            {reviews.map((review) => (
+              <SwiperSlide key={review._id}>
+                <div className="h-full bg-gray-50/50 hover:bg-white p-10 rounded-[3rem] border border-gray-100 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all duration-500 flex flex-col justify-between group">
                   <div>
-                    <h4 className="font-bold text-lg text-gray-800 dark:text-gray-100">
-                      {review.reviewerName}
-                    </h4>
-                    <div className="flex items-center gap-2">
-                      <StarRating rating={review.rating} />
-                      <span className="text-[10px] text-gray-400 font-medium">
+                    <StarRating rating={review.rating} />
+                    <p className="mt-6 text-gray-600 text-lg leading-relaxed italic line-clamp-4">
+                      "{review.comment}"
+                    </p>
+                  </div>
+
+                  <div className="mt-8 flex items-center gap-4 border-t border-gray-100 pt-8">
+                    <div className="relative">
+                      <img
+                        src={
+                          review.reviewerImage ||
+                          "https://i.ibb.co/5r5z0Lq/user.png"
+                        }
+                        alt={review.reviewerName}
+                        className="w-14 h-14 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                      />
+                      <div className="absolute -bottom-1 -right-1 bg-[#422ad5] p-1 rounded-full text-white">
+                        <Star size={10} fill="currentColor" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 leading-none mb-1 text-lg">
+                        {review.reviewerName}
+                      </h4>
+                      <p className="text-sm text-gray-400 font-medium">
                         {review.date
-                          ? new Date(review.date).toLocaleDateString()
-                          : "Recent"}
-                      </span>
+                          ? new Date(review.date).toDateString()
+                          : "Verified Customer"}
+                      </p>
                     </div>
                   </div>
+
+                  {review.mealName && (
+                    <div className="absolute top-10 right-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-[10px] bg-[#422ad5] text-white px-3 py-1 rounded-full font-bold uppercase tracking-widest">
+                        {review.mealName}
+                      </span>
+                    </div>
+                  )}
                 </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
 
-                <p className="text-gray-600 dark:text-gray-300 leading-relaxed italic mb-4">
-                  "{review.comment.substring(0, 120)}
-                  {review.comment.length > 120 ? "..." : ""}"
-                </p>
-
-                {/* যদি রিভিউটি কোনো নির্দিষ্ট খাবারের হয়, তবে খাবারের নাম দেখাতে পারেন */}
-                {review.mealName && (
-                  <div className="text-xs font-bold text-[#422ad5] uppercase tracking-widest">
-                    Ordered: {review.mealName}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          ))}
+          {/* Custom Navigation Buttons */}
+          <button className="prev-btn absolute top-1/2 -left-4 md:-left-8 z-20 -translate-y-1/2 w-14 h-14 rounded-full bg-white shadow-xl border border-gray-100 flex items-center justify-center text-[#422ad5] hover:bg-[#422ad5] hover:text-white transition-all duration-300 opacity-0 group-hover:opacity-100">
+            <ChevronLeft size={28} />
+          </button>
+          <button className="next-btn absolute top-1/2 -right-4 md:-right-8 z-20 -translate-y-1/2 w-14 h-14 rounded-full bg-white shadow-xl border border-gray-100 flex items-center justify-center text-[#422ad5] hover:bg-[#422ad5] hover:text-white transition-all duration-300 opacity-0 group-hover:opacity-100">
+            <ChevronRight size={28} />
+          </button>
         </div>
       </div>
     </section>
