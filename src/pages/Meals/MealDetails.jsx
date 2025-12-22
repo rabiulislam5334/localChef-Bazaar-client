@@ -196,18 +196,16 @@ const MealDetails = () => {
         comment: reviewText,
         reviewerName: user?.displayName || "Anonymous",
         reviewerImage: user?.photoURL || "",
-        reviewerEmail: user?.email, // সার্ভারে ফিল্টার করার জন্য ইমেইল অবশ্যই লাগবে
+        reviewerEmail: user?.email, //
         date: new Date(),
       };
 
       const res = await axiosSecure.post("/reviews", reviewPayload);
 
-      // সাকসেস হলে লোকাল স্টেট আপডেট করা
       if (res.data.review) {
         setReviews([res.data.review, ...reviews]);
         toast.success("Thank you! Review posted successfully.");
 
-        // ফর্ম এবং মোডাল রিসেট করা
         setIsReviewModalOpen(false);
         setReviewText("");
         setReviewRating(0);
@@ -223,19 +221,37 @@ const MealDetails = () => {
   };
 
   /* -------- Add to Favorite -------- */
+  /* -------- Add to Favorite (Updated) -------- */
   const addFavorite = async () => {
     if (!user) return navigate("/login", { state: `/meals/${id}` });
+
     try {
-      await axiosSecure.post("/favorites", {
+      const favoritePayload = {
         mealId: id,
         mealName: meal.foodName,
-        price: meal.price,
-      });
-      toast.success("Added to favorites ❤️");
+        mealImage: meal.foodImage,
+        chefName: meal.chefName,
+        price: Number(meal.price),
+        description:
+          meal.ingredients && Array.isArray(meal.ingredients)
+            ? meal.ingredients.join(", ")
+            : meal.ingredients,
+        addedTime: new Date(),
+      };
+
+      const res = await axiosSecure.post("/favorites", favoritePayload);
+
+      if (res.data) {
+        toast.success("Added to favorites ❤️");
+      }
     } catch (err) {
-      toast.error(
-        err.response?.status === 409 ? "Already in favorites" : "Failed"
-      );
+      console.error("Favorite Error:", err);
+
+      if (err.response?.status === 409) {
+        toast.error("Already in your favorites");
+      } else {
+        toast.error("Failed to add to favorites");
+      }
     }
   };
 
