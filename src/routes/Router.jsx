@@ -25,6 +25,8 @@ import DashboardIndex from "../pages/Dashboard/DashboardIndex";
 import AdminOverview from "../pages/Dashboard/Admin/AdminOverview";
 import ChefOverview from "../pages/Dashboard/Chef/ChefOverview";
 import UserOverview from "../pages/Dashboard/User/UserOverview";
+import ChefOrderRequests from "../pages/Dashboard/Chef/ChefOrderRequests";
+import MyReviews from "../pages/Dashboard/User/MyReview";
 
 export const router = createBrowserRouter([
   {
@@ -41,7 +43,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "meals/:id",
-        element: <MealDetails />,
+        element: (
+          <PrivetRouter>
+            <MealDetails />
+          </PrivetRouter>
+        ),
       },
       {
         path: "/payment/:id",
@@ -105,7 +111,19 @@ export const router = createBrowserRouter([
       },
       {
         path: "profile",
-        element: <Profile />,
+        element: (
+          <PrivetRouter>
+            <Profile />
+          </PrivetRouter>
+        ),
+      },
+      {
+        path: "user/my-review",
+        element: (
+          <PrivetRouter>
+            <MyReviews />
+          </PrivetRouter>
+        ),
       },
       {
         path: "admin/manage-users",
@@ -158,7 +176,15 @@ export const router = createBrowserRouter([
           </PrivetRouter>
         ),
       },
-      // 🟢 আগে ছিল: /dashboard/my-meals, এখন: my-meals
+      {
+        path: "order-requests",
+        element: (
+          <PrivetRouter>
+            <ChefOrderRequests />
+          </PrivetRouter>
+        ),
+      },
+
       {
         path: "my-meals",
         element: (
@@ -176,7 +202,6 @@ export const router = createBrowserRouter([
         ),
       },
 
-      // 3. User Routes (রিলেটিভ পাথ)
       {
         path: "user/orders",
         element: (

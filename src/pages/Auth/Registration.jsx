@@ -1,28 +1,68 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router"; // Link, useNavigate must be imported from 'react-router-dom' (assuming)
-import axios from "axios"; // Kept for imgbb external API call
+import { Link, useNavigate } from "react-router";
+import axios from "axios";
 import toast from "react-hot-toast";
+import {
+  Eye,
+  EyeOff,
+  Camera,
+  MapPin,
+  Mail,
+  Lock,
+  User,
+  ArrowRight,
+} from "lucide-react";
 import useAuth from "../../hooks/useAuth";
-import useAxios from "../../hooks/useAxios"; // ⬅️ 1. useAxios import করা হয়েছে
+import useAxios from "../../hooks/useAxios";
 
 const Register = () => {
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
+
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm();
 
   const { registerUser, updateUserProfile } = useAuth();
-  const axiosInstance = useAxios(); // ⬅️ 2. axiosInstance তৈরি করা হয়েছে
+  const axiosInstance = useAxios();
   const navigate = useNavigate();
 
-  const handleRegistration = async (data) => {
-    try {
-      // 1️⃣ create firebase user
-      const result = await registerUser(data.email, data.password);
+  const password = watch("password");
 
-      // 2️⃣ upload image to imgbb
+  /* ---------------- Image Change ---------------- */
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only image files allowed");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
+      return;
+    }
+
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  /* ---------------- Register ---------------- */
+  const handleRegistration = async (data) => {
+    const toastId = toast.loading("Creating your account...");
+    let firebaseUser = null;
+
+    try {
+      // 1️⃣ Firebase register
+      const result = await registerUser(data.email, data.password);
+      firebaseUser = result.user;
+
+      // 2️⃣ Upload image
       const formData = new FormData();
       formData.append("image", data.photo[0]);
 
@@ -31,86 +71,154 @@ const Register = () => {
         formData
       );
 
-      const photoURL = imgRes.data.data.display_url;
+      const photoURL = imgRes.data?.data?.display_url;
+      if (!photoURL) throw new Error("Image upload failed");
 
-      // 3️⃣ update firebase profile
-      // Assuming updateUserProfile signature is (name, photoURL)
+      // 🔥 3️⃣ UPDATE PROFILE (FIXED)
       await updateUserProfile({
         displayName: data.name,
-        photoURL: photoURL,
+        photoURL,
       });
 
-      // 4️⃣ get firebase idToken
-      const idToken = await result.user.getIdToken();
+      // 4️⃣ Backend save
+      const idToken = await firebaseUser.getIdToken();
+      await axiosInstance.post("/auth/firebase-login", {
+        idToken,
+        name: data.name,
+        imageUrl: photoURL,
+        address: data.address,
+      });
 
-      // 5️⃣ login to backend (IMPORTANT) ⬅️ 3. এই অংশটি ফিক্স করা হয়েছে
-      await axiosInstance.post(
-        "/auth/firebase-login", // 404 ফিক্স করার জন্য শুধু relative path ব্যবহার করা হয়েছে
-        {
-          idToken,
-          name: data.name,
-          imageUrl: photoURL,
-        },
-        { withCredentials: true }
-      );
-
-      toast.success("Registration successful!");
+      toast.success("Registration successful!", { id: toastId });
       navigate("/");
     } catch (error) {
-      console.error("Registration error:", error);
-      toast.error(error.message || "Registration failed");
+      console.error(error);
+
+      if (firebaseUser) {
+        await firebaseUser.delete().catch(() => {});
+      }
+
+      toast.error(error.message || "Registration failed", { id: toastId });
     }
   };
 
   return (
-    <div className="card bg-base-100 max-w-sm mx-auto shadow-2xl">
-      <h3 className="text-3xl text-center mt-4">Register</h3>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="w-full max-w-xl bg-white rounded-3xl shadow p-8">
+        <h2 className="text-3xl font-black text-center mb-6">Create Account</h2>
 
-      <form onSubmit={handleSubmit(handleRegistration)} className="card-body">
-        <label>Name</label>
-        <input
-          {...register("name", { required: "Name required" })}
-          className="input"
-        />
-        {errors.name && <p className="text-red-500">{errors.name.message}</p>}
+        <form onSubmit={handleSubmit(handleRegistration)} className="space-y-5">
+          {/* Photo */}
+          <div className="flex items-center">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-3xl bg-indigo-50 border-2 border-dashed flex items-center justify-center overflow-hidden">
+                {photoPreview ? (
+                  <img
+                    src={photoPreview}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Camera size={30} className="text-indigo-300" />
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                {...register("photo", { required: true })}
+                onChange={handleImageChange}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </div>
+          </div>
 
-        <label>Photo</label>
-        <input
-          type="file"
-          {...register("photo", { required: "Photo required" })}
-        />
-        {errors.photo && <p className="text-red-500">{errors.photo.message}</p>}
+          {/* Name */}
+          <Input
+            icon={<User />}
+            {...register("name", { required: true })}
+            placeholder="Full Name"
+          />
 
-        <label>Email</label>
-        <input
-          type="email"
-          {...register("email", { required: "Email required" })}
-        />
-        {errors.email && <p className="text-red-500">{errors.email.message}</p>}
+          {/* Email */}
+          <Input
+            icon={<Mail />}
+            type="email"
+            {...register("email", { required: true })}
+            placeholder="Email"
+          />
 
-        <label>Password</label>
-        <input
-          type="password"
-          {...register("password", {
-            required: "Password required",
-            minLength: { value: 6, message: "Min 6 characters" },
-          })}
-        />
-        {errors.password && (
-          <p className="text-red-500">{errors.password.message}</p>
-        )}
+          {/* Address */}
+          <textarea
+            {...register("address", { required: true })}
+            placeholder="Address"
+            className="w-full bg-gray-50 rounded-2xl p-4"
+          />
 
-        <button className="btn btn-neutral mt-4">Register</button>
+          {/* Password */}
+          <PasswordInput
+            show={showPass}
+            toggle={() => setShowPass(!showPass)}
+            {...register("password", { required: true })}
+            placeholder="Password"
+          />
 
-        <p className="text-sm mt-2">
-          Already have an account?{" "}
-          <Link to="/login" className="text-blue-400 underline">
-            Login
-          </Link>
-        </p>
-      </form>
+          {/* Confirm Password */}
+          <PasswordInput
+            show={showConfirmPass}
+            toggle={() => setShowConfirmPass(!showConfirmPass)}
+            {...register("confirmPassword", {
+              validate: (v) => v === password,
+            })}
+            placeholder="Confirm Password"
+          />
+
+          <button className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold">
+            Create Account <ArrowRight className="inline ml-2" />
+          </button>
+
+          <p className="text-center">
+            Already have account?{" "}
+            <Link to="/login" className="text-indigo-600 font-bold">
+              Login
+            </Link>
+          </p>
+        </form>
+      </div>
     </div>
   );
 };
+
+/* ---------------- Reusable Inputs ---------------- */
+
+const Input = React.forwardRef(({ icon, ...props }, ref) => (
+  <div className="relative">
+    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+      {icon}
+    </span>
+    <input
+      ref={ref}
+      {...props}
+      className="w-full bg-gray-50 rounded-2xl py-3 pl-12 pr-4"
+    />
+  </div>
+));
+
+const PasswordInput = React.forwardRef(({ show, toggle, ...props }, ref) => (
+  <div className="relative">
+    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+    <input
+      ref={ref}
+      type={show ? "text" : "password"}
+      {...props}
+      className="w-full bg-gray-50 rounded-2xl py-3 pl-12 pr-12"
+    />
+    <button
+      type="button"
+      onClick={toggle}
+      className="absolute right-4 top-1/2 -translate-y-1/2"
+    >
+      {show ? <EyeOff /> : <Eye />}
+    </button>
+  </div>
+));
 
 export default Register;

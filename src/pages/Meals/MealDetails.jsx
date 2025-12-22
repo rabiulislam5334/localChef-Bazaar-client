@@ -166,29 +166,57 @@ const MealDetails = () => {
   };
 
   /* -------- Handle Review Submission -------- */
+  /* -------- Handle Review Submission (Rewritten) -------- */
   const onSubmitReview = async (e) => {
     e.preventDefault();
-    if (!user) return navigate("/login", { state: `/meals/${id}` });
-    if (reviewRating === 0) return toast.error("Select a rating");
+
+    // ১. ইউজার লগইন না থাকলে লগইন পেজে পাঠানো
+    if (!user) {
+      toast.error("Please login to post a review");
+      return navigate("/login", { state: `/meals/${id}` });
+    }
+
+    // ২. রেটিং সিলেক্ট করা হয়েছে কিনা চেক করা
+    if (reviewRating === 0) {
+      return toast.error("Please select a rating star");
+    }
+
+    // ৩. কমেন্ট খালি কিনা চেক করা (অপশনাল কিন্তু ভালো)
+    if (!reviewText.trim()) {
+      return toast.error("Please write a comment");
+    }
 
     try {
       setReviewLoading(true);
-      const res = await axiosSecure.post("/reviews", {
+
+      const reviewPayload = {
         foodId: id,
+        mealTitle: meal?.foodName || "Unknown Meal", // সার্ভারের জন্য মিলের নাম
         rating: reviewRating,
         comment: reviewText,
-        reviewerName: user.displayName,
-        reviewerImage: user.photoURL,
+        reviewerName: user?.displayName || "Anonymous",
+        reviewerImage: user?.photoURL || "",
+        reviewerEmail: user?.email, // সার্ভারে ফিল্টার করার জন্য ইমেইল অবশ্যই লাগবে
         date: new Date(),
-      });
+      };
 
-      setReviews([res.data.review, ...reviews]);
-      toast.success("Review posted!");
-      setIsReviewModalOpen(false);
-      setReviewText("");
-      setReviewRating(0);
+      const res = await axiosSecure.post("/reviews", reviewPayload);
+
+      // সাকসেস হলে লোকাল স্টেট আপডেট করা
+      if (res.data.review) {
+        setReviews([res.data.review, ...reviews]);
+        toast.success("Thank you! Review posted successfully.");
+
+        // ফর্ম এবং মোডাল রিসেট করা
+        setIsReviewModalOpen(false);
+        setReviewText("");
+        setReviewRating(0);
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed");
+      console.error("Review Error:", err);
+
+      const errMsg = err.response?.data?.message || "Failed to post review";
+      toast.error(errMsg);
     } finally {
       setReviewLoading(false);
     }

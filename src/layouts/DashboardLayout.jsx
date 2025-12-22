@@ -131,17 +131,17 @@ export default function DashboardLayout() {
               {role === "chef" && (
                 <>
                   <li>
-                    <NavLink to="chef/create-meal" className={navLinkClass}>
+                    <NavLink to="create-meal" className={navLinkClass}>
                       <ChefHat size={20} /> Create Meal
                     </NavLink>
                   </li>
                   <li>
-                    <NavLink to="chef/my-meals" className={navLinkClass}>
+                    <NavLink to="my-meals" className={navLinkClass}>
                       <Utensils size={20} /> My Meals
                     </NavLink>
                   </li>
                   <li>
-                    <NavLink to="chef/order-requests" className={navLinkClass}>
+                    <NavLink to="order-requests" className={navLinkClass}>
                       <ShoppingBag size={20} /> Order Requests
                     </NavLink>
                   </li>
