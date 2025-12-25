@@ -7,7 +7,6 @@ const HomeBannerSection = () => {
   return (
     // ব্যাকগ্রাউন্ড কালার এখন আপনার ব্র্যন্ডের ডার্ক টোন (#0F0736)
     <section className="bg-[#0F0736] py-20 px-4 md:py-32 relative overflow-hidden">
-      {/* গ্লো ইফেক্ট যা আপনার পার্পল থিমকে সাপোর্ট করে */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-[#422ad5] opacity-20 blur-[150px]"></div>
       <div className="absolute bottom-0 right-0 w-64 h-64 bg-fuchsia-600 opacity-10 blur-[120px]"></div>
 
@@ -29,7 +28,7 @@ const HomeBannerSection = () => {
             </span>
           </div>
 
-          <h2 className="text-4xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] uppercase tracking-tighter">
+          <h2 className="text-4xl md:text-6xl lg:text-6xl font-black text-white leading-[0.9] uppercase tracking-tighter">
             Multiple Chefs. <br />
             {/* এখানে আপনার ব্র্যন্ড ব্লু থেকে পার্পল গ্রেডিয়েন্ট */}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#422ad5] to-fuchsia-500">

@@ -172,11 +172,18 @@ export default function DashboardLayout() {
           </nav>
 
           {/* Sidebar Footer (Logout) */}
+          {/* Sidebar Footer (Logout) */}
           <div className="p-6 mt-auto">
             <button
               onClick={async () => {
-                await logOut();
-                navigate("/");
+                try {
+                  await logOut(); // Firebase এবং Backend Logout শেষ হওয়া পর্যন্ত অপেক্ষা করবে
+
+                  // replace: true দেওয়ার ফলে ইউজার আর ব্যাক বাটন টিপে ড্যাশবোর্ডে ফিরতে পারবে না
+                  navigate("/", { replace: true });
+                } catch (error) {
+                  console.error("Logout failed:", error);
+                }
               }}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 text-red-500 transition-all font-bold"
             >

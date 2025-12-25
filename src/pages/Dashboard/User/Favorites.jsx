@@ -99,86 +99,87 @@ const Favorites = () => {
 
               {/* Table Body */}
               <tbody className="before:block before:h-2">
-                {favorites.map((f, i) => (
-                  <tr
-                    key={f._id}
-                    className="group hover:bg-indigo-50/30 transition-all duration-300"
-                  >
-                    <td className="pl-8 font-bold text-gray-400 group-hover:text-indigo-600">
-                      {String(i + 1).padStart(2, "0")}
-                    </td>
+                {Array.isArray(favorites) &&
+                  favorites.map((f, i) => (
+                    <tr
+                      key={f._id}
+                      className="group hover:bg-indigo-50/30 transition-all duration-300"
+                    >
+                      <td className="pl-8 font-bold text-gray-400 group-hover:text-indigo-600">
+                        {String(i + 1).padStart(2, "0")}
+                      </td>
 
-                    <td>
-                      <div className="flex items-center gap-4">
-                        <div className="avatar">
-                          <div className="mask mask-squircle w-16 h-16 shadow-md group-hover:scale-105 transition-transform duration-300">
-                            <img
-                              src={
-                                f.mealImage ||
-                                f.foodImage ||
-                                "https://via.placeholder.com/150"
-                              }
-                              alt={f.mealName}
-                              className="object-cover"
-                            />
+                      <td>
+                        <div className="flex items-center gap-4">
+                          <div className="avatar">
+                            <div className="mask mask-squircle w-16 h-16 shadow-md group-hover:scale-105 transition-transform duration-300">
+                              <img
+                                src={
+                                  f.mealImage ||
+                                  f.foodImage ||
+                                  "https://via.placeholder.com/150"
+                                }
+                                alt={f.mealName}
+                                className="object-cover"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-bold text-gray-800 text-base">
+                              {f.mealName || "Untitled Meal"}
+                            </div>
+                            <div className="text-[10px] uppercase font-bold text-indigo-400 tracking-tighter">
+                              Favorite Item
+                            </div>
                           </div>
                         </div>
-                        <div>
-                          <div className="font-bold text-gray-800 text-base">
-                            {f.mealName || "Untitled Meal"}
-                          </div>
-                          <div className="text-[10px] uppercase font-bold text-indigo-400 tracking-tighter">
-                            Favorite Item
-                          </div>
+                      </td>
+
+                      <td className="font-semibold text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <User size={14} className="text-indigo-300" />
+                          {f.chefName || "Guest Chef"}
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="font-semibold text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <User size={14} className="text-indigo-300" />
-                        {f.chefName || "Guest Chef"}
-                      </div>
-                    </td>
+                      <td>
+                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-lg font-black text-sm">
+                          ${f.price || 0}
+                        </span>
+                      </td>
 
-                    <td>
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-lg font-black text-sm">
-                        ${f.price || 0}
-                      </span>
-                    </td>
+                      <td className="text-gray-500 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} />
+                          {f.addedTime
+                            ? new Date(f.addedTime).toLocaleDateString()
+                            : "N/A"}
+                        </div>
+                      </td>
 
-                    <td className="text-gray-500 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} />
-                        {f.addedTime
-                          ? new Date(f.addedTime).toLocaleDateString()
-                          : "N/A"}
-                      </div>
-                    </td>
+                      <td className="text-center pr-8">
+                        <div className="flex justify-center gap-3">
+                          {/* Details Page Link */}
+                          <Link
+                            to={`/meals/${f.mealId}`}
+                            className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm group/btn"
+                            title="View Details"
+                          >
+                            <ExternalLink size={18} />
+                          </Link>
 
-                    <td className="text-center pr-8">
-                      <div className="flex justify-center gap-3">
-                        {/* Details Page Link */}
-                        <Link
-                          to={`/meals/${f.mealId}`}
-                          className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm group/btn"
-                          title="View Details"
-                        >
-                          <ExternalLink size={18} />
-                        </Link>
-
-                        {/* Delete Button */}
-                        <button
-                          onClick={() => handleDelete(f._id)}
-                          className="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm hover:shadow-red-200"
-                          title="Delete"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {/* Delete Button */}
+                          <button
+                            onClick={() => handleDelete(f._id)}
+                            className="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm hover:shadow-red-200"
+                            title="Delete"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

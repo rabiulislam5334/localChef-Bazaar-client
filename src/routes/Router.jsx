@@ -27,11 +27,13 @@ import ChefOverview from "../pages/Dashboard/Chef/ChefOverview";
 import UserOverview from "../pages/Dashboard/User/UserOverview";
 import ChefOrderRequests from "../pages/Dashboard/Chef/ChefOrderRequests";
 import MyReviews from "../pages/Dashboard/User/MyReview";
+import ErrorPage from "../pages/ErrorPage/ErrorPage";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: RootLayout,
+    errorElement: <ErrorPage></ErrorPage>,
     children: [
       {
         index: true,
@@ -169,7 +171,7 @@ export const router = createBrowserRouter([
       },
 
       {
-        path: "create-meal",
+        path: "/dashboard/create-meal",
         element: (
           <PrivetRouter>
             <CreateMeal />
@@ -186,7 +188,7 @@ export const router = createBrowserRouter([
       },
 
       {
-        path: "my-meals",
+        path: "/dashboard/my-meals",
         element: (
           <PrivetRouter>
             <MyMeals />

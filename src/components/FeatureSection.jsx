@@ -94,32 +94,33 @@ const FeatureSection = () => {
 
         {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          {features.map((feature, index) => (
-            <div
-              key={feature.id}
-              ref={(el) => (cardsRef.current[index] = el)}
-              className="group relative p-10 rounded-[3rem] bg-gray-50 hover:bg-white hover:shadow-[0_30px_60px_rgba(66,42,213,0.1)] transition-all duration-500 border border-transparent hover:border-gray-100"
-            >
-              {/* Icon Container with Animated Background */}
+          {Array.isArray(features) &&
+            features.map((feature, index) => (
               <div
-                className={`relative w-20 h-20 flex items-center justify-center rounded-3xl mb-8 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6 ${feature.color}`}
+                key={feature.id}
+                ref={(el) => (cardsRef.current[index] = el)}
+                className="group relative p-10 rounded-[3rem] bg-gray-50 hover:bg-white hover:shadow-[0_30px_60px_rgba(66,42,213,0.1)] transition-all duration-500 border border-transparent hover:border-gray-100"
               >
-                <div className="absolute inset-0 bg-current opacity-10 rounded-3xl animate-pulse"></div>
-                {feature.icon}
+                {/* Icon Container with Animated Background */}
+                <div
+                  className={`relative w-20 h-20 flex items-center justify-center rounded-3xl mb-8 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6 ${feature.color}`}
+                >
+                  <div className="absolute inset-0 bg-current opacity-10 rounded-3xl animate-pulse"></div>
+                  {feature.icon}
+                </div>
+
+                {/* Text Content */}
+                <h3 className="text-2xl font-black text-gray-800 mb-4 group-hover:text-[#422ad5] transition-colors">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-500 leading-relaxed text-lg">
+                  {feature.description}
+                </p>
+
+                {/* Decorative Circle */}
+                <div className="absolute -bottom-2 -right-2 w-24 h-24 bg-[#422ad5]/5 rounded-full blur-2xl group-hover:bg-[#422ad5]/10 transition-all"></div>
               </div>
-
-              {/* Text Content */}
-              <h3 className="text-2xl font-black text-gray-800 mb-4 group-hover:text-[#422ad5] transition-colors">
-                {feature.title}
-              </h3>
-              <p className="text-gray-500 leading-relaxed text-lg">
-                {feature.description}
-              </p>
-
-              {/* Decorative Circle */}
-              <div className="absolute -bottom-2 -right-2 w-24 h-24 bg-[#422ad5]/5 rounded-full blur-2xl group-hover:bg-[#422ad5]/10 transition-all"></div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
     </section>

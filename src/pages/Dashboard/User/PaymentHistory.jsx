@@ -37,15 +37,16 @@ const PaymentHistory = () => {
               </tr>
             </thead>
             <tbody>
-              {payments.map((p, i) => (
-                <tr key={p._id}>
-                  <td>{i + 1}</td>
-                  <td>{p.transactionId}</td>
-                  <td>${p.amount}</td>
-                  <td>{p.orderId}</td>
-                  <td>{new Date(p.paymentTime).toLocaleString()}</td>
-                </tr>
-              ))}
+              {Array.isArray(payments) &&
+                payments.map((p, i) => (
+                  <tr key={p._id}>
+                    <td>{i + 1}</td>
+                    <td>{p.transactionId}</td>
+                    <td>${p.amount}</td>
+                    <td>{p.orderId}</td>
+                    <td>{new Date(p.paymentTime).toLocaleString()}</td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

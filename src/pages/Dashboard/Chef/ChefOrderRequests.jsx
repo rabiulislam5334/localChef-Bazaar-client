@@ -1,7 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import toast from "react-hot-toast";
-
+import Swal from "sweetalert2";
 import {
   ShoppingBag,
   User,
@@ -11,6 +10,8 @@ import {
   XCircle,
   Truck,
   DollarSign,
+  Loader2,
+  Phone,
 } from "lucide-react";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import useAuth from "../../../hooks/useAuth";
@@ -23,46 +24,80 @@ const ChefOrderRequests = () => {
     data: orders = [],
     refetch,
     isLoading,
+    isError,
   } = useQuery({
     queryKey: ["chef-orders", user?.email],
+    enabled: !!user?.email,
     queryFn: async () => {
       const res = await axiosSecure.get(`/chef/order-requests`);
       return res.data || [];
     },
   });
 
+  // SweetAlert2 ব্যবহার করে স্ট্যাটাস আপডেট
   const updateStatus = async (id, newStatus) => {
-    const toastId = toast.loading(`Updating to ${newStatus}...`);
-    try {
-      await axiosSecure.patch(`/orders/${id}/status`, { status: newStatus });
-      toast.success(`Order ${newStatus} successfully!`, { id: toastId });
-      refetch();
-    } catch (err) {
-      const errorMsg = err.response?.data?.message || "Failed to update status";
-      toast.error(errorMsg, { id: toastId });
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `You want to mark this order as ${newStatus}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#4f46e5",
+      cancelButtonColor: "#d33",
+      confirmButtonText: `Yes, ${newStatus}!`,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await axiosSecure.patch(`/orders/${id}/status`, {
+          status: newStatus,
+        });
+
+        if (res.data.success || res.status === 200) {
+          Swal.fire({
+            icon: "success",
+            title: `Order ${newStatus}`,
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          refetch();
+        }
+      } catch (err) {
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: err.response?.data?.message || "Something went wrong!",
+        });
+      }
     }
   };
 
-  if (isLoading)
-    return <div className="p-10 text-center font-bold">Loading Orders...</div>;
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+        <Loader2 className="animate-spin text-indigo-600 mb-4" size={48} />
+        <p className="text-gray-500 font-bold">
+          Loading your kitchen orders...
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-4 md:p-8 bg-[#fbfbfd] min-h-screen">
       <div className="max-w-7xl mx-auto">
         <header className="mb-10">
-          <h2 className="text-3xl font-black text-gray-800 flex items-center gap-3">
-            <ShoppingBag className="text-[#422ad5]" size={32} /> Order Requests
+          <h2 className="text-3xl font-black text-gray-900 flex items-center gap-3 italic">
+            <ShoppingBag className="text-indigo-600" size={32} />
+            ACTIVE ORDERS
           </h2>
-          <p className="text-gray-500 font-medium mt-1">
-            Manage your incoming food orders and delivery status
-          </p>
+          <div className="h-1 w-20 bg-indigo-600 rounded-full mt-2"></div>
         </header>
 
         {orders.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-[2rem] border-2 border-dashed">
-            <ShoppingBag className="mx-auto text-gray-200 mb-4" size={64} />
-            <p className="text-gray-400 font-bold">
-              No orders found for you yet!
+          <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100">
+            <ShoppingBag className="mx-auto text-gray-200 mb-4" size={60} />
+            <p className="text-gray-400 font-bold text-xl">
+              No active requests right now.
             </p>
           </div>
         ) : (
@@ -70,90 +105,108 @@ const ChefOrderRequests = () => {
             {orders.map((order) => (
               <div
                 key={order._id}
-                className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col transition-all hover:shadow-md"
+                className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col border-b-4 border-b-indigo-500 transition-transform hover:scale-[1.02]"
               >
-                <div
-                  className={`px-6 py-3 text-[10px] font-black uppercase tracking-widest flex justify-between items-center ${
-                    order.orderStatus === "delivered"
-                      ? "bg-green-50 text-green-600"
-                      : order.orderStatus === "cancelled"
-                      ? "bg-red-50 text-red-600"
-                      : "bg-indigo-50 text-[#422ad5]"
-                  }`}
-                >
-                  <span>Status: {order.orderStatus}</span>
-                  <span className="flex items-center gap-1">
-                    <Clock size={12} />{" "}
-                    {new Date(order.orderTime).toLocaleDateString()}
+                {/* Header: Status & Time */}
+                <div className="p-5 pb-0 flex justify-between items-center">
+                  <span
+                    className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                      order.orderStatus === "delivered"
+                        ? "bg-green-100 text-green-600"
+                        : order.orderStatus === "accepted"
+                        ? "bg-blue-100 text-blue-600"
+                        : order.orderStatus === "cancelled"
+                        ? "bg-red-100 text-red-600"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {order.orderStatus}
+                  </span>
+                  <span className="text-xs text-gray-400 flex items-center gap-1 font-bold">
+                    <Clock size={14} />{" "}
+                    {new Date(order.orderTime).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 </div>
 
-                <div className="p-6 flex-1 space-y-4">
+                <div className="p-6 space-y-5 flex-1">
+                  {/* Food Details */}
                   <div>
-                    <h3 className="text-xl font-black text-gray-800">
-                      {order.foodName}
+                    <h3 className="text-xl font-black text-gray-800 leading-tight">
+                      {order.mealName || order.foodName}
                     </h3>
-                    <div className="flex gap-4 mt-2">
-                      <span className="text-sm font-bold text-gray-500 flex items-center gap-1">
-                        Qty:{" "}
-                        <span className="text-gray-800">{order.quantity}</span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm font-bold text-gray-400">
+                        Qty: {order.quantity}
                       </span>
-                      <span className="text-sm font-bold text-gray-500 flex items-center gap-1">
-                        Price:{" "}
-                        <span className="text-green-600">${order.price}</span>
+                      <span className="text-indigo-600 font-black tracking-tight underline">
+                        ${order.total?.toFixed(2)}
                       </span>
                     </div>
                   </div>
 
-                  <hr className="border-gray-50" />
-
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2 text-sm">
+                  {/* Customer Info Box */}
+                  <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-start gap-3">
                       <User size={16} className="text-gray-400 mt-1" />
-                      <div>
-                        <p className="font-bold text-gray-700">
-                          {order.userEmail}
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] font-black text-gray-400 uppercase">
+                          Customer
                         </p>
-                        <p className="text-[11px] text-gray-400 flex items-center gap-1">
-                          <DollarSign size={12} /> Payment:{" "}
-                          <span className="uppercase">
-                            {order.paymentStatus}
-                          </span>
+                        <p className="text-xs font-bold text-gray-700 truncate">
+                          {order.userEmail}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2 text-sm text-gray-500">
+                    <div className="flex items-start gap-3">
                       <MapPin size={16} className="text-gray-400 mt-1" />
-                      <p className="text-xs leading-relaxed">
-                        {order.userAddress}
-                      </p>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase">
+                          Delivery To
+                        </p>
+                        <p className="text-xs font-bold text-gray-600 leading-snug">
+                          {order.userAddress}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-6 pt-0 grid grid-cols-3 gap-2">
+                {/* Footer Actions */}
+                <div className="p-4 bg-gray-50/50 grid grid-cols-3 gap-2">
                   <button
                     disabled={order.orderStatus !== "pending"}
                     onClick={() => updateStatus(order._id, "cancelled")}
-                    className="btn btn-sm bg-red-50 text-red-500 border-none hover:bg-red-500 hover:text-white disabled:bg-gray-50 disabled:text-gray-300 rounded-xl"
+                    className="py-3 rounded-xl bg-white border border-red-100 text-red-500 hover:bg-red-500 hover:text-white disabled:opacity-30 flex flex-col items-center gap-1 transition-all"
                   >
-                    <XCircle size={16} /> Cancel
+                    <XCircle size={18} />
+                    <span className="text-[9px] font-black uppercase">
+                      Cancel
+                    </span>
                   </button>
 
                   <button
                     disabled={order.orderStatus !== "pending"}
                     onClick={() => updateStatus(order._id, "accepted")}
-                    className="btn btn-sm bg-blue-50 text-blue-600 border-none hover:bg-blue-600 hover:text-white disabled:bg-gray-50 disabled:text-gray-300 rounded-xl"
+                    className="py-3 rounded-xl bg-white border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white disabled:opacity-30 flex flex-col items-center gap-1 transition-all"
                   >
-                    <CheckCircle2 size={16} /> Accept
+                    <CheckCircle2 size={18} />
+                    <span className="text-[9px] font-black uppercase">
+                      Accept
+                    </span>
                   </button>
 
                   <button
                     disabled={order.orderStatus !== "accepted"}
                     onClick={() => updateStatus(order._id, "delivered")}
-                    className="btn btn-sm bg-green-50 text-green-600 border-none hover:bg-green-600 hover:text-white disabled:bg-gray-50 disabled:text-gray-300 rounded-xl"
+                    className="py-3 rounded-xl bg-white border border-green-100 text-green-600 hover:bg-green-600 hover:text-white disabled:opacity-30 flex flex-col items-center gap-1 transition-all"
                   >
-                    <Truck size={16} /> Deliver
+                    <Truck size={18} />
+                    <span className="text-[9px] font-black uppercase">
+                      Deliver
+                    </span>
                   </button>
                 </div>
               </div>

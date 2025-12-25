@@ -24,12 +24,12 @@ const MyReviews = () => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      // সার্ভার এখন হেডার থেকে টোকেন নিয়ে ইমেইল অনুযায়ী ফিল্টার করবে
+
       const res = await axiosSecure.get("/reviews/my");
       setReviews(res.data);
     } catch (error) {
       console.error("Error fetching reviews:", error);
-      // ৪০১ এরর হলে হুক নিজেই লগআউট করাবে, এখানে শুধু মেসেজ দেখানো
+
       if (error.response?.status !== 401) {
         toast.error("Failed to load reviews");
       }
@@ -118,62 +118,63 @@ const MyReviews = () => {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reviews.map((review) => (
-            <div
-              key={review._id}
-              className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 group"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1 pr-2">
-                  <div className="flex items-center gap-1.5 text-indigo-600 text-[10px] uppercase tracking-wider font-bold mb-1">
-                    <Utensils size={12} /> Meal Feedback
+          {Array.isArray(reviews) &&
+            reviews.map((review) => (
+              <div
+                key={review._id}
+                className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 group"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1 pr-2">
+                    <div className="flex items-center gap-1.5 text-indigo-600 text-[10px] uppercase tracking-wider font-bold mb-1">
+                      <Utensils size={12} /> Meal Feedback
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800 line-clamp-1">
+                      {review.mealTitle || "Unnamed Meal"}
+                    </h3>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-800 line-clamp-1">
-                    {review.mealTitle || "Unnamed Meal"}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-xs font-black">
-                  <Star size={14} fill="currentColor" />
-                  {review.rating}
-                </div>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-2xl mb-6 min-h-[80px]">
-                <p className="text-sm text-gray-600 italic leading-relaxed">
-                  "{review.comment}"
-                </p>
-              </div>
-
-              <div className="flex justify-between items-center border-t border-gray-50 pt-4">
-                <div className="flex items-center gap-2 text-[11px] font-medium text-gray-400">
-                  <Calendar size={13} />
-                  {new Date(review.date).toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
+                  <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-xs font-black">
+                    <Star size={14} fill="currentColor" />
+                    {review.rating}
+                  </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setSelectedReview(review)}
-                    className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-colors duration-200"
-                    title="Edit Review"
-                  >
-                    <Edit3 size={16} />
-                  </button>
+                <div className="bg-gray-50 p-4 rounded-2xl mb-6 min-h-[80px]">
+                  <p className="text-sm text-gray-600 italic leading-relaxed">
+                    "{review.comment}"
+                  </p>
+                </div>
 
-                  <button
-                    onClick={() => handleDelete(review._id)}
-                    className="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-colors duration-200"
-                    title="Delete Review"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                <div className="flex justify-between items-center border-t border-gray-50 pt-4">
+                  <div className="flex items-center gap-2 text-[11px] font-medium text-gray-400">
+                    <Calendar size={13} />
+                    {new Date(review.date).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectedReview(review)}
+                      className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-colors duration-200"
+                      title="Edit Review"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(review._id)}
+                      className="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-colors duration-200"
+                      title="Delete Review"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       )}
 

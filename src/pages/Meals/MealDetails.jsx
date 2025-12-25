@@ -22,20 +22,20 @@ import Swal from "sweetalert2";
 import AOS from "aos";
 import "aos/dist/aos.css";
 
-/* ---------------- Skeleton Loader ---------------- */
+/* ---------------- Components ---------------- */
 const Skeleton = () => (
-  <div className="max-w-7xl mx-auto px-4 py-10 animate-pulse">
-    <div className="grid lg:grid-cols-2 gap-8">
-      <div className="h-[450px] bg-gray-200 dark:bg-gray-700 rounded-3xl" />
-      <div className="space-y-6">
-        <div className="h-12 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
-        <div className="h-20 w-full bg-gray-200 dark:bg-gray-700 rounded-xl" />
+  <div className="max-w-7xl mx-auto px-4 py-20 animate-pulse pt-32">
+    <div className="grid lg:grid-cols-2 gap-12">
+      <div className="h-[500px] bg-gray-200 rounded-[3rem]" />
+      <div className="space-y-8">
+        <div className="h-16 w-3/4 bg-gray-200 rounded-2xl" />
+        <div className="h-32 w-full bg-gray-200 rounded-3xl" />
+        <div className="h-16 w-1/2 bg-gray-200 rounded-2xl" />
       </div>
     </div>
   </div>
 );
 
-/* ---------------- Star Rating Display ---------------- */
 const StarRating = ({ rating }) => (
   <div className="flex gap-1">
     {[1, 2, 3, 4, 5].map((i) => (
@@ -50,9 +50,8 @@ const StarRating = ({ rating }) => (
   </div>
 );
 
-/* ---------------- Interactive Star Input ---------------- */
 const RatingInput = ({ rating, setRating }) => (
-  <div className="flex gap-2">
+  <div className="flex gap-2 justify-center py-4">
     {[1, 2, 3, 4, 5].map((i) => (
       <motion.button
         key={i}
@@ -62,9 +61,9 @@ const RatingInput = ({ rating, setRating }) => (
         type="button"
       >
         <Star
-          size={32}
+          size={36}
           className={
-            i <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+            i <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"
           }
         />
       </motion.button>
@@ -82,19 +81,19 @@ const MealDetails = () => {
   const [meal, setMeal] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isFavorite, setIsFavorite] = useState(false); // Favorite State
 
-  // Order States
+  // Order & Review States
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [orderQty, setOrderQty] = useState(1);
   const [orderLoading, setOrderLoading] = useState(false);
-
-  // Review States
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     AOS.init({ duration: 800, once: true });
     const loadData = async () => {
       try {
@@ -113,30 +112,20 @@ const MealDetails = () => {
     loadData();
   }, [id, axiosPublic]);
 
-  // Live Price Calculation
   const totalPrice = meal ? (orderQty * Number(meal.price)).toFixed(2) : 0;
 
-  /* -------- Handle Order with SweetAlert -------- */
   const onSubmitOrder = async (e) => {
     e.preventDefault();
     if (!user) return navigate("/login", { state: `/meals/${id}` });
 
     const address = e.target.address.value;
-
     Swal.fire({
       title: "Confirm Your Order",
       text: `Total price is $${totalPrice}. Confirm order?`,
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#422ad5",
-      cancelButtonColor: "#d33",
       confirmButtonText: "Yes, Confirm!",
-      background: document.documentElement.classList.contains("dark")
-        ? "#1f2937"
-        : "#fff",
-      color: document.documentElement.classList.contains("dark")
-        ? "#fff"
-        : "#000",
     }).then(async (result) => {
       if (result.isConfirmed) {
         const payload = {
@@ -157,7 +146,7 @@ const MealDetails = () => {
           setIsOrderModalOpen(false);
           navigate(`/payment/${res.data.insertedId}`);
         } catch (err) {
-          toast.error(err.response?.data?.message || "Order failed");
+          toast.error("Order failed");
         } finally {
           setOrderLoading(false);
         }
@@ -165,63 +154,38 @@ const MealDetails = () => {
     });
   };
 
-  /* -------- Handle Review Submission -------- */
-  /* -------- Handle Review Submission (Rewritten) -------- */
   const onSubmitReview = async (e) => {
     e.preventDefault();
-
-    // ১. ইউজার লগইন না থাকলে লগইন পেজে পাঠানো
-    if (!user) {
-      toast.error("Please login to post a review");
-      return navigate("/login", { state: `/meals/${id}` });
-    }
-
-    // ২. রেটিং সিলেক্ট করা হয়েছে কিনা চেক করা
-    if (reviewRating === 0) {
-      return toast.error("Please select a rating star");
-    }
-
-    // ৩. কমেন্ট খালি কিনা চেক করা (অপশনাল কিন্তু ভালো)
-    if (!reviewText.trim()) {
-      return toast.error("Please write a comment");
-    }
+    if (!user) return navigate("/login", { state: `/meals/${id}` });
+    if (reviewRating === 0) return toast.error("Please select a star");
 
     try {
       setReviewLoading(true);
-
       const reviewPayload = {
         foodId: id,
-        mealTitle: meal?.foodName || "Unknown Meal", // সার্ভারের জন্য মিলের নাম
+        mealTitle: meal?.foodName,
         rating: reviewRating,
         comment: reviewText,
-        reviewerName: user?.displayName || "Anonymous",
-        reviewerImage: user?.photoURL || "",
-        reviewerEmail: user?.email, //
+        reviewerName: user?.displayName,
+        reviewerImage: user?.photoURL,
+        reviewerEmail: user?.email,
         date: new Date(),
       };
-
       const res = await axiosSecure.post("/reviews", reviewPayload);
-
       if (res.data.review) {
         setReviews([res.data.review, ...reviews]);
-        toast.success("Thank you! Review posted successfully.");
-
+        toast.success("Review posted!");
         setIsReviewModalOpen(false);
         setReviewText("");
         setReviewRating(0);
       }
     } catch (err) {
-      console.error("Review Error:", err);
-
-      const errMsg = err.response?.data?.message || "Failed to post review";
-      toast.error(errMsg);
+      toast.error("Failed to post review");
     } finally {
       setReviewLoading(false);
     }
   };
 
-  /* -------- Add to Favorite -------- */
-  /* -------- Add to Favorite (Updated) -------- */
   const addFavorite = async () => {
     if (!user) return navigate("/login", { state: `/meals/${id}` });
 
@@ -232,25 +196,17 @@ const MealDetails = () => {
         mealImage: meal.foodImage,
         chefName: meal.chefName,
         price: Number(meal.price),
-        description:
-          meal.ingredients && Array.isArray(meal.ingredients)
-            ? meal.ingredients.join(", ")
-            : meal.ingredients,
-        addedTime: new Date(),
       };
 
       const res = await axiosSecure.post("/favorites", favoritePayload);
-
       if (res.data) {
+        setIsFavorite(true); // বাটন লাল করার জন্য স্টেট আপডেট
         toast.success("Added to favorites ❤️");
       }
     } catch (err) {
-      console.error("Favorite Error:", err);
-
       if (err.response?.status === 409) {
-        toast.error("Already in your favorites");
-      } else {
-        toast.error("Failed to add to favorites");
+        setIsFavorite(true);
+        toast.error("Already in favorites");
       }
     }
   };
@@ -259,197 +215,224 @@ const MealDetails = () => {
   if (!meal) return <div className="p-20 text-center">Meal not found</div>;
 
   return (
-    <div className="bg-white dark:bg-gray-900 min-h-screen py-10">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* --- TOP SECTION --- */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="grid lg:grid-cols-2 gap-10"
-        >
-          <img
-            src={meal.foodImage}
-            alt={meal.foodName}
-            className="w-full h-[450px] object-cover rounded-3xl shadow-xl"
-          />
+    <div className="bg-[#FDFCFB] dark:bg-gray-900 min-h-screen pb-20">
+      {/* Container: Width 11/12 via w-[92%] and top padding pt-32 */}
+      <div className="max-w-7xl w-[92%] mx-auto pt-32">
+        {/* --- MAIN PRODUCT SECTION --- */}
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="relative group"
+          >
+            <img
+              src={meal.foodImage}
+              alt={meal.foodName}
+              className="w-full h-[500px] object-cover rounded-[3rem] shadow-2xl transition-transform duration-500 group-hover:scale-[1.02]"
+            />
+            <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-5 py-2 rounded-2xl flex items-center gap-2 font-bold shadow-lg">
+              <Star className="fill-yellow-400 text-yellow-400" size={20} />
+              {meal.rating} Rating
+            </div>
+          </motion.div>
 
-          <div className="flex flex-col justify-center">
-            <h1 className="text-4xl font-bold text-[#422ad5] mb-4">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-6"
+          >
+            <h1 className="text-3xl font-black text-[#422ad5] leading-tight">
               {meal.foodName}
             </h1>
-            <div className="flex items-center gap-2 mb-4">
-              <StarRating rating={meal.rating} />
-              <span className="text-gray-500">({meal.rating}/5)</span>
+
+            <div className="flex items-baseline gap-4">
+              <span className="text-4xl font-black text-[#422ad5]">
+                ${meal.price}
+              </span>
+              <span className="text-gray-400 line-through text-xl font-medium">
+                ${(meal.price * 1.2).toFixed(2)}
+              </span>
             </div>
-            <p className="text-3xl font-black text-[#422ad5] mb-6">
-              ${meal.price}
+
+            <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed bg-white dark:bg-gray-800 p-6 rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-sm">
+              Experience the authentic taste of <b>{meal.foodName}</b>,
+              specially prepared by Chef <b>{meal.chefName}</b> with fresh
+              ingredients.
             </p>
 
-            <div className="grid grid-cols-2 gap-4 mb-8 text-gray-600 dark:text-gray-300">
-              <p className="flex items-center gap-2">
-                <ChefHat size={18} /> {meal.chefName}
-              </p>
-              <p className="flex items-center gap-2">
-                <Clock size={18} /> {meal.estimatedDeliveryTime}
-              </p>
-              <p className="flex items-center gap-2">
-                <MapPin size={18} /> {meal.deliveryArea}
-              </p>
-              <p className="flex items-center gap-2">
-                <User size={18} /> {meal.chefExperience} Exp
-              </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-50 shadow-sm text-gray-600">
+                <ChefHat className="text-[#422ad5]" />{" "}
+                <span className="font-bold">{meal.chefName}</span>
+              </div>
+              <div className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-50 shadow-sm text-gray-600">
+                <Clock className="text-[#422ad5]" />{" "}
+                <span className="font-bold">{meal.estimatedDeliveryTime}</span>
+              </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 pt-4">
               <button
                 onClick={() => setIsOrderModalOpen(true)}
-                className="btn bg-[#422ad5] text-white px-8 h-14 rounded-2xl border-none"
+                className="flex-1 btn bg-[#422ad5] hover:bg-[#331eb3] text-white h-16 rounded-[1.5rem] border-none text-lg font-bold shadow-xl shadow-indigo-100"
               >
                 <ShoppingCart className="mr-2" /> Order Now
               </button>
               <button
                 onClick={addFavorite}
-                className="btn btn-outline border-[#422ad5] text-[#422ad5] h-14 rounded-2xl"
+                className={`btn h-16 w-16 rounded-[1.5rem] border-2 transition-all duration-300 ${
+                  isFavorite
+                    ? "bg-red-50 border-red-500 text-red-500 shadow-red-100"
+                    : "bg-white border-gray-100 text-gray-400 hover:text-red-500"
+                }`}
               >
-                <Heart />
+                <Heart className={isFavorite ? "fill-red-500" : ""} size={28} />
               </button>
             </div>
-          </div>
-        </motion.div>
-
-        {/* --- INGREDIENTS --- */}
-        <div
-          className="mt-12 p-8 bg-gray-50 dark:bg-gray-800 rounded-3xl"
-          data-aos="fade-up"
-        >
-          <h2 className="text-xl font-bold text-[#422ad5] mb-3">Ingredients</h2>
-          <p className="text-gray-700 dark:text-gray-300">
-            {Array.isArray(meal.ingredients)
-              ? meal.ingredients.join(" • ")
-              : meal.ingredients}
-          </p>
+          </motion.div>
         </div>
 
-        {/* --- REVIEWS --- */}
-        <div className="mt-16">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold text-[#422ad5]">
-              Customer Reviews ({reviews.length})
-            </h2>
-            <button
-              onClick={() => setIsReviewModalOpen(true)}
-              className="btn btn-sm bg-[#422ad5] text-white"
-            >
-              <MessageSquare size={16} className="mr-1" /> Write Review
-            </button>
+        {/* --- INGREDIENTS & REVIEWS SECTION --- */}
+        <div className="mt-20 grid lg:grid-cols-3 gap-12">
+          {/* Ingredients */}
+          <div className="lg:col-span-1 space-y-6">
+            <h2 className="text-2xl font-black text-gray-800">Ingredients</h2>
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+              <ul className="space-y-4">
+                {(Array.isArray(meal.ingredients)
+                  ? meal.ingredients
+                  : meal.ingredients?.split(",")
+                ).map((ing, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center gap-3 text-gray-600 font-medium capitalize"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-[#422ad5]" />{" "}
+                    {ing.trim()}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {reviews.length === 0 ? (
-              <p className="text-gray-500 italic">No reviews yet.</p>
-            ) : (
-              reviews.map((r) => (
-                <div
-                  key={r._id}
-                  className="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex gap-3">
-                        <img
-                          src={
-                            r.reviewerImage ||
-                            "https://i.ibb.co/5r5z0Lq/user.png"
-                          }
-                          className="w-12 h-12 rounded-xl object-cover"
-                          alt=""
-                        />
-                        <div>
-                          <h4 className="font-bold">{r.reviewerName}</h4>
-                          <StarRating rating={r.rating} />
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-gray-400 italic">
-                        {r.date
-                          ? new Date(r.date).toLocaleDateString()
-                          : "Recent"}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      "{r.comment}"
-                    </p>
-                  </div>
+          {/* Reviews */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-black text-gray-800">
+                Reviews ({reviews.length})
+              </h2>
+              <button
+                onClick={() => setIsReviewModalOpen(true)}
+                className="btn btn-ghost text-[#422ad5] font-black hover:bg-[#422ad5]/5"
+              >
+                <MessageSquare size={20} className="mr-2" /> Write Review
+              </button>
+            </div>
+
+            <div className="grid gap-6">
+              {reviews.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200 text-gray-400">
+                  No reviews yet. Be the first to share your experience!
                 </div>
-              ))
-            )}
+              ) : (
+                reviews.map((r) => (
+                  <div
+                    key={r._id}
+                    className="p-8 bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-50 flex gap-6"
+                  >
+                    <img
+                      src={
+                        r.reviewerImage || "https://i.ibb.co/5r5z0Lq/user.png"
+                      }
+                      className="w-14 h-14 rounded-2xl object-cover ring-4 ring-indigo-50"
+                      alt=""
+                    />
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-black text-lg">{r.reviewerName}</h4>
+                        <span className="text-xs text-gray-400 font-medium">
+                          {r.date
+                            ? new Date(r.date).toLocaleDateString()
+                            : "Recent"}
+                        </span>
+                      </div>
+                      <StarRating rating={r.rating} />
+                      <p className="mt-4 text-gray-600 italic">"{r.comment}"</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* --- ORDER MODAL --- */}
+      {/* --- ORDER MODAL (Standard UI) --- */}
       <AnimatePresence>
         {isOrderModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
             <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white dark:bg-gray-800 w-full max-w-md p-8 rounded-[2rem] relative"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white w-full max-w-md p-10 rounded-[3rem] relative shadow-2xl"
             >
               <button
                 onClick={() => setIsOrderModalOpen(false)}
-                className="absolute top-5 right-5 text-gray-400"
+                className="absolute top-8 right-8 text-gray-400 hover:text-black transition-colors"
               >
                 <X />
               </button>
-              <h2 className="text-2xl font-bold text-[#422ad5] mb-6">
-                Complete Order
+              <h2 className="text-3xl font-black text-[#422ad5] mb-8">
+                Confirm Order
               </h2>
-              <form onSubmit={onSubmitOrder} className="space-y-5">
+              <form onSubmit={onSubmitOrder} className="space-y-6">
                 <div>
-                  <label className="text-xs font-bold uppercase text-gray-400 mb-2 block">
-                    Quantity
+                  <label className="text-sm font-black uppercase text-gray-400 mb-3 block">
+                    Order Quantity
                   </label>
-                  <div className="flex items-center gap-4 bg-gray-100 dark:bg-gray-700 w-fit p-1 rounded-xl">
+                  <div className="flex items-center gap-6 bg-gray-50 w-fit p-2 rounded-2xl border border-gray-100">
                     <button
                       type="button"
                       onClick={() => setOrderQty(Math.max(1, orderQty - 1))}
-                      className="p-2 bg-white dark:bg-gray-600 rounded-lg"
+                      className="w-10 h-10 bg-white shadow-sm rounded-xl flex items-center justify-center font-bold"
                     >
                       <Minus size={18} />
                     </button>
-                    <span className="text-lg font-bold w-6 text-center">
+                    <span className="text-xl font-black w-6 text-center">
                       {orderQty}
                     </span>
                     <button
                       type="button"
                       onClick={() => setOrderQty(orderQty + 1)}
-                      className="p-2 bg-[#422ad5] text-white rounded-lg"
+                      className="w-10 h-10 bg-[#422ad5] text-white rounded-xl flex items-center justify-center shadow-lg"
                     >
                       <Plus size={18} />
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase text-gray-400 mb-2 block">
-                    Address
+                  <label className="text-sm font-black uppercase text-gray-400 mb-3 block">
+                    Delivery Address
                   </label>
                   <textarea
                     name="address"
                     rows="3"
                     required
-                    className="w-full p-4 rounded-xl border dark:bg-gray-700 outline-none focus:ring-2 focus:ring-[#422ad5]"
+                    className="w-full p-5 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-[#422ad5]/20 font-medium"
+                    placeholder="Enter your full address..."
                   ></textarea>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
-                  <span className="font-medium">Total:</span>
-                  <span className="text-2xl font-black text-[#422ad5]">
+                <div className="flex justify-between items-center p-6 bg-indigo-50/50 rounded-2xl">
+                  <span className="font-bold text-gray-500 uppercase text-xs">
+                    Total Amount
+                  </span>
+                  <span className="text-3xl font-black text-[#422ad5]">
                     ${totalPrice}
                   </span>
                 </div>
                 <button
                   disabled={orderLoading}
-                  className="w-full bg-[#422ad5] text-white py-4 rounded-xl font-bold shadow-lg"
+                  className="w-full bg-[#422ad5] text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-[#331eb3] transition-all"
                 >
                   {orderLoading ? "Processing..." : "Confirm & Pay Now"}
                 </button>
@@ -459,52 +442,52 @@ const MealDetails = () => {
         )}
       </AnimatePresence>
 
-      {/* --- REVIEW MODAL --- */}
+      {/* --- REVIEW MODAL (Standard UI) --- */}
       <AnimatePresence>
         {isReviewModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
             <motion.div
-              initial={{ y: 50 }}
-              animate={{ y: 0 }}
-              exit={{ y: 50 }}
-              className="bg-white dark:bg-gray-800 w-full max-w-md p-8 rounded-[2rem] relative"
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="bg-white w-full max-w-md p-10 rounded-[3rem] relative shadow-2xl"
             >
               <button
                 onClick={() => setIsReviewModalOpen(false)}
-                className="absolute top-5 right-5 text-gray-400"
+                className="absolute top-8 right-8 text-gray-400 hover:text-black"
               >
                 <X />
               </button>
-              <h2 className="text-2xl font-bold text-[#422ad5] mb-6">
+              <h2 className="text-3xl font-black text-[#422ad5] mb-8">
                 Write a Review
               </h2>
-              <form onSubmit={onSubmitReview} className="space-y-5">
+              <form onSubmit={onSubmitReview} className="space-y-6 text-center">
                 <div>
-                  <label className="text-xs font-bold uppercase text-gray-400 mb-2 block">
-                    Rating
+                  <label className="text-sm font-black uppercase text-gray-400 mb-3 block">
+                    Rate this Meal
                   </label>
                   <RatingInput
                     rating={reviewRating}
                     setRating={setReviewRating}
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-bold uppercase text-gray-400 mb-2 block">
-                    Comment
+                <div className="text-left">
+                  <label className="text-sm font-black uppercase text-gray-400 mb-3 block">
+                    Your Feedback
                   </label>
                   <textarea
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
                     rows="4"
                     required
-                    className="w-full p-4 rounded-xl border dark:bg-gray-700 outline-none focus:ring-2 focus:ring-[#422ad5]"
+                    className="w-full p-5 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-[#422ad5]/20 font-medium"
+                    placeholder="How was the food?"
                   ></textarea>
                 </div>
                 <button
                   disabled={reviewLoading}
-                  className="w-full bg-[#422ad5] text-white py-4 rounded-xl font-bold"
+                  className="w-full bg-[#422ad5] text-white py-5 rounded-2xl font-black text-lg shadow-xl hover:bg-[#331eb3] transition-all"
                 >
-                  {reviewLoading ? "Posting..." : "Submit Review"}
+                  {reviewLoading ? "Posting..." : "Post Review"}
                 </button>
               </form>
             </motion.div>

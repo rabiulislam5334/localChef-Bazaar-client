@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router"; //
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import {
@@ -14,7 +14,7 @@ import toast from "react-hot-toast";
 import useAuth from "../../hooks/useAuth";
 
 export default function Login() {
-  const { signInUser, signInWithGoogle } = useAuth(); // Google Login ও নিশ্চিত করুন
+  const { signInUser, signInWithGoogle } = useAuth();
   const {
     register,
     handleSubmit,
@@ -24,13 +24,13 @@ export default function Login() {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
 
-  // রিডাইরেক্ট পাথ ঠিক করা
-  const from = location.state?.from?.pathname || location.state || "/";
+  // 🔥 রিডাইরেক্ট পাথ সেফ করা
+  const from = location.state?.from?.pathname || "/";
 
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      const email = data.email.trim();
+      const email = data.email.trim().toLowerCase(); // lowercase ও ভালো
       const password = data.password.trim();
 
       await signInUser(email, password);
@@ -43,6 +43,7 @@ export default function Login() {
       setLoading(false);
     }
   };
+
   const handleGoogleLogin = () => {
     signInWithGoogle()
       .then(() => {
@@ -92,8 +93,9 @@ export default function Login() {
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {/* Email */}
           <div className="space-y-2">
-            <label className="text-xs font-black text-gray-400 uppercase ml-1 tracking-wider">
+            <label className="text-xs font-black text-gray-400 uppercase ml-1 tracking-widener">
               Email Address
             </label>
             <div className="relative group">
@@ -102,14 +104,22 @@ export default function Login() {
                 size={18}
               />
               <input
-                {...register("email", { required: "Email is required" })}
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: { value: /^\S+@\S+$/i, message: "Invalid email" },
+                })}
                 type="email"
+                autoComplete="email" // 🔥 অটো-ফিল ফিক্স
                 placeholder="name@company.com"
                 className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white rounded-2xl outline-none transition-all font-medium"
               />
             </div>
+            {errors.email && (
+              <p className="text-red-500 text-sm">{errors.email.message}</p>
+            )}
           </div>
 
+          {/* Password */}
           <div className="space-y-2">
             <label className="text-xs font-black text-gray-400 uppercase ml-1 tracking-wider">
               Password
@@ -122,12 +132,27 @@ export default function Login() {
               <input
                 {...register("password", { required: "Password is required" })}
                 type="password"
+                autoComplete="current-password" // 🔥 অটো-ফিল ফিক্স
                 placeholder="••••••••"
                 className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white rounded-2xl outline-none transition-all font-medium"
               />
             </div>
+            {errors.password && (
+              <p className="text-red-500 text-sm">{errors.password.message}</p>
+            )}
           </div>
 
+          {/* Forgot Password */}
+          <div className="text-right">
+            <Link
+              to="/auth/forgot-password"
+              className="text-sm text-indigo-600 font-bold hover:underline"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+
+          {/* Submit */}
           <button
             disabled={loading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-black shadow-xl shadow-indigo-100 flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:bg-gray-300"

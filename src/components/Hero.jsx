@@ -18,7 +18,7 @@ const Hero = () => {
     <div className="hero min-h-screen relative overflow-hidden flex items-center justify-center">
       {/* ================= Background Video ================= */}
       <video
-        className="absolute inset-0 w-full h-full object-cover scale-105" // হালকা জুম ভিডিওকে আরও ডেপথ দেয়
+        className="absolute inset-0 w-full h-full object-cover scale-105"
         src="https://cdn.shef.com/assets/desktopBGVideo-7e4b60bd.mp4"
         autoPlay
         loop
@@ -46,10 +46,10 @@ const Hero = () => {
           {/* Main Heading with Reveal Animation */}
           <h1
             data-aos="fade-up"
-            className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-black text-white leading-[1.1] mb-8"
+            className="text-4xl sm:text-6xl md:text-7xl lg:text-7xl font-serif italic font-black text-white leading-[1.1] mb-8"
           >
             Authentic <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#422ad5] to-gray-400">
               Home-Cooked
             </span>
             <span className="relative">

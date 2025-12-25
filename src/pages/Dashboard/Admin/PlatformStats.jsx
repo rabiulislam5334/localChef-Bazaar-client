@@ -165,12 +165,13 @@ const PlatformStats = () => {
                   paddingAngle={8}
                   dataKey="value"
                 >
-                  {ordersData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
+                  {Array.isArray(ordersData) &&
+                    ordersData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
                 </Pie>
                 <Tooltip
                   contentStyle={{

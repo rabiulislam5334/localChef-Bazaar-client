@@ -52,7 +52,7 @@ const HomeReviews = () => {
 
   return (
     <section className="py-24 bg-white overflow-hidden">
-      <div className="container mx-auto px-4">
+      <div className="max-w-7xl w-[92%]  mx-auto  px-4">
         {/* Header Section */}
         <div className="text-center mb-16 relative">
           <motion.div
@@ -62,7 +62,7 @@ const HomeReviews = () => {
           >
             <Quote size={32} />
           </motion.div>
-          <h2 className="text-4xl md:text-6xl font-serif font-black text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-6xl font-serif italic font-black text-gray-900 mb-4">
             Hear from our <span className="text-[#422ad5]">Foodies</span>
           </h2>
           <p className="text-gray-500 max-w-lg mx-auto text-lg">
@@ -89,52 +89,53 @@ const HomeReviews = () => {
             }}
             className="pb-16"
           >
-            {reviews.map((review) => (
-              <SwiperSlide key={review._id}>
-                <div className="h-full bg-gray-50/50 hover:bg-white p-10 rounded-[3rem] border border-gray-100 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all duration-500 flex flex-col justify-between group">
-                  <div>
-                    <StarRating rating={review.rating} />
-                    <p className="mt-6 text-gray-600 text-lg leading-relaxed italic line-clamp-4">
-                      "{review.comment}"
-                    </p>
-                  </div>
-
-                  <div className="mt-8 flex items-center gap-4 border-t border-gray-100 pt-8">
-                    <div className="relative">
-                      <img
-                        src={
-                          review.reviewerImage ||
-                          "https://i.ibb.co/5r5z0Lq/user.png"
-                        }
-                        alt={review.reviewerName}
-                        className="w-14 h-14 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                      />
-                      <div className="absolute -bottom-1 -right-1 bg-[#422ad5] p-1 rounded-full text-white">
-                        <Star size={10} fill="currentColor" />
-                      </div>
-                    </div>
+            {Array.isArray(reviews) &&
+              reviews.map((review) => (
+                <SwiperSlide key={review._id}>
+                  <div className="h-full bg-gray-50/50 hover:bg-white p-10 rounded-[3rem] border border-gray-100 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all duration-500 flex flex-col justify-between group">
                     <div>
-                      <h4 className="font-bold text-gray-900 leading-none mb-1 text-lg">
-                        {review.reviewerName}
-                      </h4>
-                      <p className="text-sm text-gray-400 font-medium">
-                        {review.date
-                          ? new Date(review.date).toDateString()
-                          : "Verified Customer"}
+                      <StarRating rating={review.rating} />
+                      <p className="mt-6 text-gray-600 text-lg leading-relaxed italic line-clamp-4">
+                        "{review.comment}"
                       </p>
                     </div>
-                  </div>
 
-                  {review.mealName && (
-                    <div className="absolute top-10 right-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-[10px] bg-[#422ad5] text-white px-3 py-1 rounded-full font-bold uppercase tracking-widest">
-                        {review.mealName}
-                      </span>
+                    <div className="mt-8 flex items-center gap-4 border-t border-gray-100 pt-8">
+                      <div className="relative">
+                        <img
+                          src={
+                            review.reviewerImage ||
+                            "https://i.ibb.co/5r5z0Lq/user.png"
+                          }
+                          alt={review.reviewerName}
+                          className="w-14 h-14 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                        />
+                        <div className="absolute -bottom-1 -right-1 bg-[#422ad5] p-1 rounded-full text-white">
+                          <Star size={10} fill="currentColor" />
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 leading-none mb-1 text-lg">
+                          {review.reviewerName}
+                        </h4>
+                        <p className="text-sm text-gray-400 font-medium">
+                          {review.date
+                            ? new Date(review.date).toDateString()
+                            : "Verified Customer"}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </SwiperSlide>
-            ))}
+
+                    {review.mealName && (
+                      <div className="absolute top-10 right-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[10px] bg-[#422ad5] text-white px-3 py-1 rounded-full font-bold uppercase tracking-widest">
+                          {review.mealName}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </SwiperSlide>
+              ))}
           </Swiper>
 
           {/* Custom Navigation Buttons */}

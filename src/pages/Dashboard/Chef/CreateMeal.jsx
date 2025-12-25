@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
+import Swal from "sweetalert2"; // SweetAlert2 ইমপোর্ট করা হয়েছে
 import toast from "react-hot-toast";
 import {
   Utensils,
@@ -17,11 +18,11 @@ import useAuth from "../../../hooks/useAuth";
 import useAxiosSecure from "../../../hooks/useAxiosSecure";
 
 const CreateMeal = () => {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const axiosSecure = useAxiosSecure();
   const navigate = useNavigate();
-  const [isDragging, setIsDragging] = useState(false); // ড্র্যাগ স্টেট
-  const [preview, setPreview] = useState(null); // ইমেজ প্রিভিউ
+  const [isDragging, setIsDragging] = useState(false);
+  const [preview, setPreview] = useState(null);
 
   const {
     register,
@@ -34,14 +35,23 @@ const CreateMeal = () => {
   const imgKey = import.meta.env.VITE_IMGBB_KEY;
   const imgUploadURL = `https://api.imgbb.com/1/upload?key=${imgKey}`;
 
-  // ড্র্যাগ ইভেন্ট হ্যান্ডলার
+  useEffect(() => {
+    register("foodImage", { required: "Food image is required" });
+  }, [register]);
+
+  const handleFileChange = (file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+    setValue("foodImage", [file], { shouldValidate: true });
+    setPreview(URL.createObjectURL(file));
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
   };
 
   const handleDrop = (e) => {
@@ -50,21 +60,22 @@ const CreateMeal = () => {
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith("image/")) {
       handleFileChange(file);
-    } else {
-      toast.error("Please drop a valid image file");
     }
   };
 
-  const handleFileChange = (file) => {
-    setValue("foodImage", [file]); // react-hook-form এ ভ্যালু সেট করা
-    setPreview(URL.createObjectURL(file)); // প্রিভিউ দেখানো
-  };
-
-  if (loading) return null;
+  if (authLoading)
+    return (
+      <p className="text-center py-20 font-bold text-indigo-600 animate-pulse">
+        Checking Chef Authentication...
+      </p>
+    );
 
   const onSubmit = async (data) => {
-    const toastId = toast.loading("Processing...");
+    // লোডিং টোস্ট শুরু
+    const loadingToast = toast.loading("Uploading image and saving meal...");
+
     try {
+      // ১. ইমেজ আপলোড করা
       const formData = new FormData();
       formData.append("image", data.foodImage[0]);
 
@@ -73,116 +84,223 @@ const CreateMeal = () => {
         body: formData,
       }).then((res) => res.json());
 
-      if (!imgRes.success) return toast.error("Upload failed", { id: toastId });
+      if (!imgRes.success) throw new Error("ImageBB upload failed");
 
+      // ২. ডাটা অবজেক্ট তৈরি
       const mealData = {
-        foodName: data.foodName,
-        price: Number(data.price),
-        ingredients: data.ingredients.split(",").map((i) => i.trim()),
-        estimatedDeliveryTime: data.estimatedDeliveryTime,
-        chefExperience: data.chefExperience,
+        foodName: data.foodName.trim(),
+        price: parseFloat(data.price),
+        ingredients: data.ingredients
+          .split(",")
+          .map((i) => i.trim())
+          .filter(Boolean),
+        estimatedDeliveryTime: data.estimatedDeliveryTime.trim(),
+        chefExperience: data.chefExperience.trim(),
         foodImage: imgRes.data.display_url,
-        chefName: user.displayName || "Chef",
-        userEmail: user.email,
+        chefName: user?.displayName || "Anonymous Chef",
+        chefEmail: user?.email, // আপনার সার্ভার লজিক অনুযায়ী chefEmail পাঠানো হচ্ছে
         rating: 0,
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
       };
 
+      // ৩. ডাটাবেজে সেভ করা
       const res = await axiosSecure.post("/meals", mealData);
+
       if (res.status === 200 || res.status === 201) {
-        toast.success("Meal published! 🍽️", { id: toastId });
-        reset();
-        setPreview(null);
-        navigate("/dashboard/my-meals");
+        toast.dismiss(loadingToast); // লোডিং টোস্ট বন্ধ করা
+
+        // --- SweetAlert2 সাকসেস মেসেজ ---
+        Swal.fire({
+          title: "Meal Created Successfully!",
+          text: `${mealData.foodName} has been added to your kitchen.`,
+          icon: "success",
+          confirmButtonColor: "#422ad5",
+          confirmButtonText: "View My Meals",
+          showClass: {
+            popup: "animate__animated animate__fadeInDown",
+          },
+          hideClass: {
+            popup: "animate__animated animate__fadeOutUp",
+          },
+        }).then((result) => {
+          if (result.isConfirmed || result.isDismissed) {
+            reset();
+            setPreview(null);
+            navigate("/dashboard/my-meals");
+          }
+        });
       }
     } catch (err) {
-      toast.error("Error occurred", { id: toastId });
+      toast.error(err.message || "Failed to create meal", { id: loadingToast });
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-12 px-4">
-      <div className="max-w-4xl mx-auto bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
-        <div className="flex items-center gap-4 mb-10">
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="max-w-5xl mx-auto bg-white rounded-[2.5rem] shadow-xl p-6 md:p-10 border border-gray-100">
+        <div className="flex items-center gap-4 mb-8 border-b pb-6 border-gray-50">
           <button
             onClick={() => navigate(-1)}
-            className="p-3 bg-gray-50 rounded-2xl hover:bg-gray-100"
+            className="p-3 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-colors"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={24} className="text-gray-600" />
           </button>
-          <h2 className="text-3xl font-black text-gray-800">Add New Meal 👨‍🍳</h2>
+          <div>
+            <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
+              Add New Meal 👨‍🍳
+            </h2>
+            <p className="text-gray-400 text-sm font-medium mt-1">
+              Fill in the details to publish your signature dish
+            </p>
+          </div>
         </div>
 
         <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="grid grid-cols-1 md:grid-cols-2 gap-8"
+          onSubmit={handleSubmit(onSubmit, (err) => {
+            console.log("Validation Errors:", err);
+            toast.error("Please fill all required fields correctly!");
+          })}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-10"
         >
-          {/* ... আগের ইনপুটগুলো (Name, Price, etc.) এখানে থাকবে ... */}
+          {/* Left Column */}
+          <div className="space-y-6">
+            <div>
+              <label className="text-xs uppercase tracking-widest font-black text-gray-400 flex items-center gap-2 mb-2">
+                <Utensils size={14} className="text-indigo-500" /> Food Name
+              </label>
+              <input
+                {...register("foodName", { required: "Name is required" })}
+                className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                placeholder="e.g. Traditional Spicy Ramen"
+              />
+              {errors.foodName && (
+                <p className="text-rose-500 text-xs mt-2 font-bold ml-1">
+                  {errors.foodName.message}
+                </p>
+              )}
+            </div>
 
-          {/* Drag & Drop Image Upload Section */}
-          <div className="md:col-span-2 space-y-2">
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-              <ImagePlus size={14} /> Food Image
-            </label>
+            <div>
+              <label className="text-xs uppercase tracking-widest font-black text-gray-400 flex items-center gap-2 mb-2">
+                <DollarSign size={14} className="text-indigo-500" /> Price (USD)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                {...register("price", { required: "Price is required" })}
+                className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                placeholder="15.00"
+              />
+              {errors.price && (
+                <p className="text-rose-500 text-xs mt-2 font-bold ml-1">
+                  {errors.price.message}
+                </p>
+              )}
+            </div>
 
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-[2rem] transition-all cursor-pointer overflow-hidden
-                ${
+            <div>
+              <label className="text-xs uppercase tracking-widest font-black text-gray-400 flex items-center gap-2 mb-2">
+                <ClipboardList size={14} className="text-indigo-500" />{" "}
+                Ingredients
+              </label>
+              <textarea
+                rows={4}
+                {...register("ingredients", {
+                  required: "Ingredients are required",
+                })}
+                className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white outline-none resize-none transition-all"
+                placeholder="Noodles, Boiled Egg, Soy Sauce, Green Onion"
+              />
+              {errors.ingredients && (
+                <p className="text-rose-500 text-xs mt-2 font-bold ml-1">
+                  {errors.ingredients.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs uppercase tracking-widest font-black text-gray-400 flex items-center gap-2 mb-2">
+                  <Clock size={14} className="text-indigo-500" /> Delivery
+                </label>
+                <input
+                  {...register("estimatedDeliveryTime", {
+                    required: "Required",
+                  })}
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                  placeholder="20-30 mins"
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-widest font-black text-gray-400 flex items-center gap-2 mb-2 text-nowrap">
+                  <ChefHat size={14} className="text-indigo-500" /> Experience
+                </label>
+                <input
+                  {...register("chefExperience", { required: "Required" })}
+                  className="w-full px-5 py-4 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                  placeholder="5 Years"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs uppercase tracking-widest font-black text-gray-400 flex items-center gap-2 mb-2">
+                <ImagePlus size={14} className="text-indigo-500" /> Food Image
+              </label>
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                className={`relative h-[220px] border-2 border-dashed rounded-[2rem] transition-all flex flex-col items-center justify-center overflow-hidden ${
                   isDragging
                     ? "border-indigo-600 bg-indigo-50"
                     : "border-gray-200 bg-gray-50 hover:bg-gray-100"
                 }`}
-            >
-              {preview ? (
-                <div className="relative w-full h-full">
+              >
+                {preview ? (
                   <img
                     src={preview}
-                    alt="Preview"
                     className="w-full h-full object-cover"
+                    alt="Preview"
                   />
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                    <p className="text-white font-bold">Change Image</p>
+                ) : (
+                  <div className="text-center group">
+                    <UploadCloud
+                      size={48}
+                      className="mx-auto text-gray-300 group-hover:text-indigo-400 transition-colors"
+                    />
+                    <p className="font-black text-gray-400 mt-3 text-sm tracking-tight">
+                      DROP IMAGE HERE
+                    </p>
+                    <p className="text-[10px] text-gray-300 uppercase mt-1">
+                      PNG, JPG up to 5MB
+                    </p>
                   </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <UploadCloud
-                    size={40}
-                    className={`mb-3 ${
-                      isDragging
-                        ? "text-indigo-600 animate-bounce"
-                        : "text-gray-400"
-                    }`}
-                  />
-                  <p className="mb-2 text-sm text-gray-500">
-                    <span className="font-semibold font-black">
-                      Click to upload
-                    </span>{" "}
-                    or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    PNG, JPG or WebP (MAX. 5MB)
-                  </p>
-                </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileChange(e.target.files[0])}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </div>
+              {errors.foodImage && (
+                <p className="text-rose-500 text-xs mt-3 font-bold ml-1">
+                  {errors.foodImage.message}
+                </p>
               )}
-
-              <input
-                type="file"
-                accept="image/*"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                onChange={(e) => handleFileChange(e.target.files[0])}
-              />
             </div>
           </div>
 
-          <div className="md:col-span-2 mt-4">
-            <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-5 rounded-[1.5rem] font-black shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95 text-lg">
-              Publish Meal <Send size={20} />
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="lg:col-span-2 w-full bg-[#422ad5] hover:bg-[#351fb3] text-white py-5 rounded-[1.5rem] font-black text-xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-2xl shadow-indigo-100 mt-4"
+          >
+            Create & Publish Dish <Send size={24} />
+          </button>
         </form>
       </div>
     </div>

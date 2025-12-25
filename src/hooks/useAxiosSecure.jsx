@@ -4,7 +4,8 @@
 // import useAuth from "./useAuth";
 
 // const axiosSecure = axios.create({
-//   baseURL: import.meta.env.VITE_API_BASE || "http://localhost:3000",
+//   baseURL: import.meta.env.VITE_API_BASE || "http:
+//local-chef-bazaar-server-seven.vercel.app",
 //   withCredentials: true,
 // });
 
@@ -38,7 +39,9 @@ import useAuth from "./useAuth";
 import { getAuth } from "firebase/auth";
 
 const axiosSecure = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || "http://localhost:3000",
+  baseURL:
+    import.meta.env.VITE_API_BASE ||
+    "https://local-chef-bazaar-server-seven.vercel.app",
   withCredentials: true,
 });
 
