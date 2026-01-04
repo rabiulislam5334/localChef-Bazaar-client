@@ -89,6 +89,16 @@ export default function Login() {
           <span className="relative px-4 bg-white text-xs font-bold text-gray-400 uppercase tracking-widest">
             Or login with email
           </span>
+          <br /> <br />
+          <span className="relative px-1 bg-white text-xs font-bold text-gray-400  tracking-widest">
+            Demo credentials <br />
+            <div>
+              Admin:rabiulislam@gmail.com <br />
+              Chef:riya@khan.com <br />
+              User:robin@khan.com <br />
+              All password:Rabiul@5334 <br />
+            </div>
+          </span>
         </div>
 
         {/* Form */}

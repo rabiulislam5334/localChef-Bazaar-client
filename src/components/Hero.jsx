@@ -49,7 +49,7 @@ const Hero = () => {
             className="text-4xl sm:text-6xl md:text-7xl lg:text-7xl font-serif italic font-black text-white leading-[1.1] mb-8"
           >
             Authentic <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#422ad5] to-gray-400">
+            <span className="text-transparent bg-clip-text bg-[#260ccb]">
               Home-Cooked
             </span>
             <span className="relative">
@@ -73,7 +73,7 @@ const Hero = () => {
           <p
             data-aos="fade-up"
             data-aos-delay="200"
-            className="max-w-2xl mx-auto text-lg md:text-xl text-gray-200 mb-10 leading-relaxed font-light"
+            className="max-w-2xl mx-auto text-lg md:text-xl text-white mb-10 leading-relaxed font-light"
           >
             Skip the restaurant and taste the tradition. Discover thousands of
             talented local chefs bringing fresh, hygienic, and authentic flavors

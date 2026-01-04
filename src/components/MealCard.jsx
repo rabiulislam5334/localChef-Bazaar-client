@@ -14,7 +14,7 @@ const HomeMeals = () => {
     AOS.init({ duration: 1000, once: true });
     const fetchMeals = async () => {
       try {
-        const res = await axios.get("/meals?limit=6");
+        const res = await axios.get("/meals?limit=8");
         setMeals(res.data.meals || []);
       } finally {
         setLoading(false);
@@ -32,7 +32,7 @@ const HomeMeals = () => {
           data-aos="fade-up"
         >
           <div className="max-w-xl">
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-1 mb-4">
               <span className="h-[2px] w-12 bg-[#422ad5]"></span>
               <span className="text-[#422ad5] font-bold uppercase tracking-widest text-sm">
                 Chef's Special
@@ -75,7 +75,7 @@ const HomeMeals = () => {
             <span className="loading loading-spinner loading-lg text-[#422ad5]"></span>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-1">
             {Array.isArray(meals) &&
               meals.map((m, index) => (
                 <div
