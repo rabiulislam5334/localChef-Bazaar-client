@@ -47,8 +47,8 @@
 
 ## 📸 Testing Credentials (Admin Access)
 Explore the administrative dashboard using these credentials:
-- **Email:** `admin@localchefbazaar.com`
-- **Password:** `Admin123!`
+- **Email:** `rabiul@khan.com`
+- **Password:** `Rabiul@5334`
 
 ---
 
